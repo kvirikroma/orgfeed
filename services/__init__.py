@@ -18,10 +18,11 @@ def check_page(request):
     return page
 
 
-def check_uuid(value: str) -> None:
+def check_uuid(value: str) -> str:
     try:
         UUID(value)
     except ValueError:
         abort(400, "Incorrect ID parameter (must match UUID v4)")
     except TypeError:
         abort(400, "Cannot find ID parameter of correct type (must appear once in query)")
+    return value
