@@ -90,9 +90,8 @@ CREATE TABLE public.subunits (
     name text NOT NULL,
     address text NOT NULL,
     leader uuid NOT NULL,
-    phone integer NOT NULL,
     email text NOT NULL,
-    CONSTRAINT subunits_phone_check CHECK (((phone >= 0) AND (phone <= 999999999)))
+    phone text NOT NULL
 );
 
 

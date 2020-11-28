@@ -59,7 +59,7 @@ class Subunit(Base):
     name = Column(String(512), unique=True, nullable=False)
     address = Column(String(512), nullable=False)
     leader = Column(UUID(), ForeignKey('employees.id', ondelete='NO ACTION'), nullable=False)
-    phone = Column(Integer(), nullable=False)
+    phone = Column(String(), nullable=False)
     email = Column(String(256), nullable=False, unique=True)
 
     leader_ref = relationship("Employee", back_populates="leader_in_subunit", foreign_keys=leader)

@@ -2,6 +2,7 @@ from flask import Blueprint, current_app
 from flask_restx import Api
 
 from .employee_api import api as employee_api
+from .subunit_api import api as subunit_api
 
 
 api_bp = Blueprint('api', __name__)
@@ -28,7 +29,7 @@ class CustomApi(Api):
 api = CustomApi(
     api_bp,
     title='OrgFeed API',
-    version='0.1.1',
+    version='0.0.1-dev',
     doc='/',
     description='API for news feed of some organization',
     authorizations=authorization
@@ -37,6 +38,7 @@ api = CustomApi(
 
 api.namespaces.clear()
 api.add_namespace(employee_api)
+api.add_namespace(subunit_api)
 
 cors_headers = {
     'Access-Control-Allow-Origin': "*",
