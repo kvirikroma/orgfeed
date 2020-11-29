@@ -52,3 +52,9 @@ def required_query_params(request_args: Dict[str, str]) -> Dict[str, Dict[str, s
     for item in request_args:
         result[item] = {"description": request_args[item], "required": True}
     return result
+
+
+def update_dict(dict1: dict or ModelCreator, dict2: dict or ModelCreator) -> dict:
+    result = dict1.copy()
+    result.update(dict2)
+    return result

@@ -1,8 +1,10 @@
 from flask import Blueprint, current_app
 from flask_restx import Api
 
+from .attachment_api import api as attachment_api
 from .employee_api import api as employee_api
 from .subunit_api import api as subunit_api
+from .post_api import api as post_api
 
 
 api_bp = Blueprint('api', __name__)
@@ -39,6 +41,8 @@ api = CustomApi(
 api.namespaces.clear()
 api.add_namespace(employee_api)
 api.add_namespace(subunit_api)
+api.add_namespace(post_api)
+api.add_namespace(attachment_api)
 
 cors_headers = {
     'Access-Control-Allow-Origin': "*",
