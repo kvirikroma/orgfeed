@@ -6,20 +6,10 @@ def custom_abort_page(message: str, code: int):
 
 
 def bind_error_pages(app: Flask):
-    @app.errorhandler(500)
-    def error500(err):
+    def error_func(err):
         if request.path.startswith("/api/v"):
             return jsonify(message=err.description), err.code
         return custom_abort_page(err.description, err.code), err.code
 
-    @app.errorhandler(404)
-    def error404(err):
-        if request.path.startswith("/api/v"):
-            return jsonify(message=err.description), err.code
-        return custom_abort_page(err.description, err.code), err.code
-
-    @app.errorhandler(400)
-    def error400(err):
-        if request.path.startswith("/api/v"):
-            return jsonify(message=err.description), err.code
-        return custom_abort_page(err.description, err.code), err.code
+    for code in (500, 404, 400, 424):
+        app.errorhandler(code)(error_func)

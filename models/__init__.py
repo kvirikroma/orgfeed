@@ -14,7 +14,7 @@ class ModelCreator:
         result = {}
         raw_result = dir(cls)
         for item in raw_result:
-            if not item.startswith("__") or not item.endswith("__"):
+            if not item.startswith("__") or not item.endswith("__"):  # if item is not like __****__
                 result[item] = getattr(cls, item)
         return result
 

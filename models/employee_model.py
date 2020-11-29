@@ -21,7 +21,7 @@ class EmailModel(ModelCreator):
 class EmployeeIdModel(ModelCreator):
     id = create_id_field(
         required=True,
-        description="Employee`s unique id in database"
+        description="Employee`s ID in database"
     )
 
 

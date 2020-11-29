@@ -38,7 +38,7 @@ SET default_with_oids = false;
 CREATE TABLE public.attachments (
     id uuid DEFAULT public.uuid() NOT NULL,
     author uuid NOT NULL,
-    post uuid NOT NULL
+    post uuid
 );
 
 

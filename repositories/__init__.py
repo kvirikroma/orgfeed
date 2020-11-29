@@ -119,7 +119,7 @@ class Attachment(Base):
 
     id = Column(UUID(), nullable=False, primary_key=True, default=lambda: str(uuid.uuid4()))
     author = Column(UUID(), ForeignKey('employees.id', ondelete='NO ACTION'), nullable=False)
-    post = Column(UUID(), ForeignKey('posts.id', ondelete='NO ACTION'), nullable=False)
+    post = Column(UUID(), ForeignKey('posts.id', ondelete='NO ACTION'))
 
     author_ref = relationship("Employee", back_populates="uploaded_attachments", foreign_keys=author)
     post_ref = relationship("Post", back_populates="attachments", foreign_keys=post)
