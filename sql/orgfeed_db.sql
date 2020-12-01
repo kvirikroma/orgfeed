@@ -73,7 +73,7 @@ CREATE TABLE public.posts (
     published_on timestamp without time zone,
     archived_on timestamp without time zone DEFAULT (timezone('utc'::text, now()) + '6 mons'::interval) NOT NULL,
     author uuid NOT NULL,
-    approved_by uuid NOT NULL,
+    approved_by uuid,
     status smallint DEFAULT 0 NOT NULL,
     body text NOT NULL
 );

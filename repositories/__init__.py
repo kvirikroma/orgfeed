@@ -91,7 +91,7 @@ class Post(Base):
     archived_on = Column(DateTime(), nullable=False, default=lambda: datetime.utcnow() + timedelta(hours=4380))
 
     author = Column(UUID(), ForeignKey('employees.id', ondelete='NO ACTION'), nullable=False)
-    approved_by = Column(UUID(), ForeignKey('employees.id', ondelete='NO ACTION'), nullable=False)
+    approved_by = Column(UUID(), ForeignKey('employees.id', ondelete='NO ACTION'), nullable=True)
     status = Column(SmallInteger(), nullable=False, default=0)
     body = Column(String(81920), nullable=False)
 

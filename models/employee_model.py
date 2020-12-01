@@ -54,7 +54,7 @@ class CommonEmployeeModel(EmailModel):
     user_type = fields.String(
         required=True,
         description="Type of employee that describes his/her privileges",
-        example="user",
+        example=EmployeeType.user.name,
         enum=[e_type.name for e_type in EmployeeType]
     )
     fired = fields.Boolean(

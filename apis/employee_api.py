@@ -1,10 +1,11 @@
 from flask_restx.namespace import Namespace
+from flask_restx import fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity, jwt_refresh_token_required
 
 from services import employee_service, check_page, check_uuid
 from .utils import OptionsResource
-from models import required_query_params
+from models import required_query_params, pages_count_model
 from models.employee_model import AuthModel, FullEmployeeModel, EmployeeRegistrationModel, TokenModel, CommonEmployeeModel
 
 
@@ -33,6 +34,17 @@ full_employee = api.model(
 employee_edit = api.model(
     'employee_edit_model',
     CommonEmployeeModel()
+)
+
+counted_employees_list = api.model(
+    'counted_list_of_employees',
+    {
+        "employees":
+            fields.List(
+                fields.Nested(full_employee)
+            ),
+        "pages_count": pages_count_model
+    }
 )
 
 
@@ -85,4 +97,14 @@ class AuthRefresh(OptionsResource):
     @jwt_refresh_token_required
     def post(self):
         """Refresh pair of tokens"""
+        return None, 200
+
+
+@api.route('/deleted_moderators')
+class AuthRefresh(OptionsResource):
+    @api.doc('deleted_moderators_of_subunit', security='apikey', params=required_query_params({'id': 'SubUnit ID'}))
+    @api.marshal_with(counted_employees_list, code=200)
+    @jwt_required
+    def get(self):
+        """Get deleted admins and moderators of the subunit"""
         return None, 200

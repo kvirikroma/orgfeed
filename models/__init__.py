@@ -7,6 +7,8 @@ ID_EXAMPLE = 'd1d3ee42-731c-04d9-0eee-16d3e7a62948'
 EMAIL_EXAMPLE = 'test@mail.com'
 EMAIL_PATTERN = r'\S+@\S+\.\S+'
 PASSWORD_EXAMPLE = 'Qwerty123'
+DATETIME_EXAMPLE = '2019-08-18T13:41:05'
+DATETIME_FORMAT = "iso8601"  # was 'rfc822' in example
 
 
 class ModelCreator:
@@ -36,6 +38,15 @@ def create_email_field(required=False, description=""):
         example=EMAIL_EXAMPLE,
         min_length=5,
         max_length=256
+    )
+
+
+def create_datetime_field(required=False, description=""):
+    return fields.DateTime(
+        required=required,
+        description=f"{description} (the format is '{DATETIME_FORMAT}')",
+        example=DATETIME_EXAMPLE,
+        dt_format=DATETIME_FORMAT
     )
 
 
