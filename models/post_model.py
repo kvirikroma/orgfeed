@@ -1,6 +1,6 @@
 from enum import Enum
 
-from flask_restx import fields, Namespace
+from flask_restx import fields
 
 from apis.attachment_api import attachment, api
 from . import ModelCreator, create_id_field, create_datetime_field

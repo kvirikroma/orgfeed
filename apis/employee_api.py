@@ -1,7 +1,8 @@
 from flask_restx.namespace import Namespace
 from flask_restx import fields
 from flask import request
-from flask_jwt_extended import jwt_required, get_jwt_identity, jwt_refresh_token_required
+from flask_jwt_extended import (jwt_required, get_jwt_identity, jwt_refresh_token_required,
+                                create_access_token, create_refresh_token)
 
 from services import employee_service, check_page, check_uuid
 from .utils import OptionsResource
@@ -97,14 +98,19 @@ class AuthRefresh(OptionsResource):
     @jwt_refresh_token_required
     def post(self):
         """Refresh pair of tokens"""
-        return None, 200
+        identity = get_jwt_identity()
+        return {
+               'access_token': create_access_token(identity=identity),
+               'refresh_token': create_refresh_token(identity=identity),
+               'user_id': identity
+        }, 200
 
 
-@api.route('/deleted_moderators')
+@api.route('/fired_moderators')
 class AuthRefresh(OptionsResource):
-    @api.doc('deleted_moderators_of_subunit', security='apikey', params=required_query_params({'id': 'SubUnit ID'}))
+    @api.doc('fired_moderators_of_subunit', security='apikey', params=required_query_params({'id': 'SubUnit ID'}))
     @api.marshal_with(counted_employees_list, code=200)
     @jwt_required
     def get(self):
-        """Get deleted admins and moderators of the subunit"""
+        """Get fired admins and moderators of the subunit"""
         return None, 200
