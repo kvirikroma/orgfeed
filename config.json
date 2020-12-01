@@ -5,5 +5,5 @@
     "SQLALCHEMY_TRACK_MODIFICATIONS": false,
     "RESTX_MASK_SWAGGER": false,
     "JWT_ACCESS_TOKEN_EXPIRES": 600,
-    "UPLOAD_FOLDER": "/var/lib/metal_in_blood/user_data/"
+    "UPLOAD_FOLDER": "/var/lib/org_feed/user_data/"
 }
