@@ -13,12 +13,18 @@ def get_subunit_by_id(subunit_id: str) -> Subunit:
     return db.session.query(Subunit).filter(Subunit.id == subunit_id).first()
 
 
+def get_subunit_by_email(email: str) -> Subunit:
+    return db.session.query(Subunit).filter(Subunit.email == email).first()
+
+
+def get_subunit_by_name(name: str) -> Subunit:
+    return db.session.query(Subunit).filter(Subunit.name == name).first()
+
+
 def delete_subunit(subunit: Subunit) -> None:
     db.session.delete(subunit)
     db.session.commit()
 
 
-def get_all_subunits(page: int, page_size: int) -> List[Subunit]:
-    return db.session.query(Subunit).\
-        limit(page_size).offset(page * page_size).\
-        all()
+def get_all_subunits() -> List[Subunit]:
+    return db.session.query(Subunit).all()

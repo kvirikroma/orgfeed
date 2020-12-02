@@ -6,6 +6,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 
 from repositories import employee_repository, subunit_repository, Employee
 from models.employee_model import EmployeeType
+from . import any_non_nones
 
 
 def check_password(password: str):
@@ -36,7 +37,7 @@ def check_password(password: str):
         abort(422, "Password must contain at least one digit")
 
 
-def prepare_employee(employee: Employee, renew: bool = False):
+def prepare_employee(employee: Employee, renew: bool = False) -> dict:
     if renew:
         employee = employee_repository.get_employee_by_email(employee.email)
     result = employee.__dict__
@@ -44,7 +45,9 @@ def prepare_employee(employee: Employee, renew: bool = False):
     return result
 
 
-def register_employee(registrar_id: str, email: str, full_name: str, subunit: str, user_type: int, password: str, **kwargs):
+def register_employee(
+        registrar_id: str, email: str, full_name: str, subunit: str, user_type: int, password: str, **kwargs
+) -> dict:
     check_password(password)
     registrar = employee_repository.get_employee_by_id(registrar_id)
     if not registrar or registrar.user_type != EmployeeType.admin.value:
@@ -86,19 +89,19 @@ def edit_employee(
         editor_id: str, employee_id: str, email: str = None,
         full_name: str = None, subunit: str = None,
         user_type: int = None, fired: bool = None, **kwargs
-):
-    if not any((email, full_name, subunit)) and user_type is None and fired is None:
+) -> dict:
+    if not any_non_nones((email, full_name, subunit, fired, user_type)):
         abort(422, "You must specify at least one field to edit")
     editor = employee_repository.get_employee_by_id(editor_id)
     if not editor or editor.user_type != EmployeeType.admin.value:
         abort(403, "Non-admins can not edit employees")
-    if email and employee_repository.get_employee_by_email(email):
-        abort(409, "User with this email already exists")
     if subunit and not subunit_repository.get_subunit_by_id(subunit):
         abort(404, "Subunit not found")
     employee = employee_repository.get_employee_by_id(employee_id)
     if not employee:
         abort(404, "Can not found an employee to edit")
+    if email and email != employee.email and employee_repository.get_employee_by_email(email):
+        abort(409, "User with this email already exists")
     for existing, new in (('email', email), ('full_name', full_name), ('subunit', subunit)):
         setattr(employee, existing, new or getattr(employee, existing))
     if user_type is not None:
@@ -108,7 +111,7 @@ def edit_employee(
     return prepare_employee(employee_repository.add_or_edit_employee(employee))
 
 
-def get_fired_moderators(subunit_id: str) -> List[Employee]:
+def get_fired_moderators(subunit_id: str) -> List[dict]:
     if not subunit_repository.get_subunit_by_id(subunit_id):
         abort(404, "Subunit not found")
     return [prepare_employee(employee) for employee in employee_repository.fired_moderators_of_subunit(subunit_id)]
