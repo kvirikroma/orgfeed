@@ -17,6 +17,8 @@ class PostStatus(Enum):
     under_consideration = 0
     posted = 1
     archived = 2
+    returned_for_improvement = 3
+    rejected = 4
 
 
 class PostBaseModel(ModelCreator):
@@ -95,7 +97,7 @@ class PostFullModel(PostBaseModel):
     )
 
 
-class SinglePostsStatistics(ModelCreator):
+class PostsStatistics(ModelCreator):
     employee_id = create_id_field(
         required=True,
         description="ID of an employee"
@@ -105,11 +107,4 @@ class SinglePostsStatistics(ModelCreator):
         description="Count of an employee`s posts",
         example=32,
         min=0
-    )
-
-
-class PostsStatistics(ModelCreator):
-    statistics = fields.List(
-        fields.Nested(api.model("single_posts_statistics", SinglePostsStatistics())),
-        description="Statistics of posts count"
     )

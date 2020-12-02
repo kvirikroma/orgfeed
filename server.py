@@ -26,7 +26,7 @@ if not (os.environ.get('JWT_KEY') and os.environ.get("PGPASSWORD")):
 
 app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY'] = os.environ.get('JWT_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] =\
-    'postgresql+psycopg2://mib_api:' + os.environ.get("PGPASSWORD") + '@/metalinblood'
+    'postgresql+psycopg2://orgfeed_user:' + os.environ.get("PGPASSWORD") + '@/orgfeed_db'
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 app.config["MAX_CONTENT_PATH"] = app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 5

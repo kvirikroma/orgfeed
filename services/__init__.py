@@ -6,7 +6,7 @@ from flask import abort
 default_page_size = 20
 
 
-def check_page(request):
+def check_page(request) -> int:
     page = request.args.get("page")
     if not page or not page.isdigit():
         abort(400, "Page query parameter must exist and be integer")

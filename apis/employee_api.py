@@ -1,13 +1,12 @@
 from flask_restx.namespace import Namespace
-from flask_restx import fields
 from flask import request
 from flask_jwt_extended import (jwt_required, get_jwt_identity, jwt_refresh_token_required,
                                 create_access_token, create_refresh_token)
 
-from services import employee_service, check_page, check_uuid
+from services import employee_service, check_uuid
 from .utils import OptionsResource
-from models import required_query_params, pages_count_model
-from models.employee_model import AuthModel, FullEmployeeModel, EmployeeRegistrationModel, TokenModel, CommonEmployeeModel
+from models import required_query_params
+from models.employee_model import AuthModel, FullEmployeeModel, EmployeeRegistrationModel, TokenModel, EmployeeEditModel
 
 
 api = Namespace('employee', description='Employees-related actions')
@@ -34,18 +33,7 @@ full_employee = api.model(
 
 employee_edit = api.model(
     'employee_edit_model',
-    CommonEmployeeModel()
-)
-
-counted_employees_list = api.model(
-    'counted_list_of_employees',
-    {
-        "employees":
-            fields.List(
-                fields.Nested(full_employee)
-            ),
-        "pages_count": pages_count_model
-    }
+    EmployeeEditModel()
 )
 
 
@@ -57,27 +45,31 @@ class Employee(OptionsResource):
     @jwt_required
     def get(self):
         """Get employee`s account info"""
-        return None, 200
+        return employee_service.get_employee(check_uuid(request.args.get("id"))), 200
 
     @api.doc('edit_employee', security='apikey', params=required_query_params({'id': 'employee ID'}))
-    @api.marshal_with(full_employee, code=200)
-    @api.response(404, description="Employee not found")
+    @api.marshal_with(full_employee, code=201)
+    @api.response(404, description="Employee or subunit not found")
     @api.response(403, description="Not allowed to edit this employee's info")
+    @api.response(409, description="Employee with given email already exists")
+    @api.response(422, description="All fields are null")
     @api.expect(employee_edit, validate=True)
     @jwt_required
     def put(self):
         """Edit employee`s account info (only for admins)"""
-        return None, 201
+        return employee_service.edit_employee(get_jwt_identity(), check_uuid(request.args.get("id")), **api.payload), 201
 
     @api.doc('employee_register', security='apikey')
     @api.expect(employee_registration, validate=True)
-    @api.response(201, description="Success")
+    @api.marshal_with(full_employee, code=201)
     @api.response(403, description="Non-admins can not register new employees")
+    @api.response(404, description="SubUnit not found")
     @api.response(409, description="Employee with given email already exists")
+    @api.response(422, description="Incorrect password given")
     @jwt_required
     def post(self):
         """Register a new employee (only for admins)"""
-        return None, 201
+        return employee_service.register_employee(get_jwt_identity(), **api.payload), 201
 
 
 @api.route('/auth')
@@ -88,7 +80,7 @@ class Auth(OptionsResource):
     @api.response(401, description="Invalid credentials")
     def post(self):
         """Log into an account"""
-        return None, 200
+        return employee_service.get_token(**api.payload), 200
 
 
 @api.route('/auth/refresh')
@@ -109,8 +101,9 @@ class AuthRefresh(OptionsResource):
 @api.route('/fired_moderators')
 class AuthRefresh(OptionsResource):
     @api.doc('fired_moderators_of_subunit', security='apikey', params=required_query_params({'id': 'SubUnit ID'}))
-    @api.marshal_with(counted_employees_list, code=200)
+    @api.marshal_with(full_employee, code=200, as_list=True)
+    @api.response(404, description="SubUnit not found")
     @jwt_required
     def get(self):
         """Get fired admins and moderators of the subunit"""
-        return None, 200
+        return employee_service.get_fired_moderators(check_uuid(request.args.get("id"))), 200

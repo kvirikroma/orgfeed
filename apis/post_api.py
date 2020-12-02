@@ -143,7 +143,7 @@ class PostStat(OptionsResource):
         "end_month": "Month to finish with",
         "subunit": "Subunit to get data from"
     }))
-    @api.marshal_with(posts_statistics, code=200)
+    @api.marshal_with(posts_statistics, code=200, as_list=True)
     @jwt_required
     def get(self):
         """Get statistics of posts for each employee of the subunit"""

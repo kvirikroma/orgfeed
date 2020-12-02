@@ -1,10 +1,10 @@
-from typing import Dict
+from typing import Dict, Type
 
 from flask_restx import fields
 
 
 ID_EXAMPLE = 'd1d3ee42-731c-04d9-0eee-16d3e7a62948'
-EMAIL_EXAMPLE = 'test@mail.com'
+EMAIL_EXAMPLE = 'gordonfreeman@city17.net'
 EMAIL_PATTERN = r'\S+@\S+\.\S+'
 PASSWORD_EXAMPLE = 'Qwerty123'
 DATETIME_EXAMPLE = '2019-08-18T13:41:05'
@@ -19,6 +19,16 @@ class ModelCreator:
             if not item.startswith("__") or not item.endswith("__"):  # if item is not like __****__
                 result[item] = getattr(cls, item)
         return result
+
+
+def clone_model(destination: Type[ModelCreator], source: Type[ModelCreator]):
+    for item in dir(source):
+        if not item.startswith("__") or not item.endswith("__"):  # if item is not like __****__
+            setattr(
+                destination,
+                item,
+                type(getattr(source, item))(**getattr(source, item).__dict__)
+            )
 
 
 def create_id_field(required=False, description=""):

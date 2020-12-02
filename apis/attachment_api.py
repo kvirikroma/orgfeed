@@ -25,16 +25,6 @@ attachment = api.model(
 )
 
 
-attachments_list = api.model(
-    'list_of_attachments',
-    {
-        "attachments":
-            fields.List(
-                fields.Nested(attachment)
-            )
-    }
-)
-
 counted_attachments_list = api.model(
     'counted_list_of_attachments',
     {

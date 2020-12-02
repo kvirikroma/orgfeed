@@ -2,7 +2,7 @@ from enum import Enum
 
 from flask_restx import fields
 
-from . import create_id_field, create_email_field, ModelCreator, PASSWORD_EXAMPLE
+from . import create_id_field, create_email_field, ModelCreator, PASSWORD_EXAMPLE, clone_model
 
 
 class EmployeeType(Enum):
@@ -57,15 +57,29 @@ class CommonEmployeeModel(EmailModel):
         example=EmployeeType.user.name,
         enum=[e_type.name for e_type in EmployeeType]
     )
+
+
+class EmployeeEditModel(CommonEmployeeModel):
     fired = fields.Boolean(
-        required=True,
+        required=False,
         description="Is the employee fired or not",
         example=False
     )
 
 
+clone_model(EmployeeEditModel, CommonEmployeeModel)
+EmployeeEditModel.full_name.required = False
+EmployeeEditModel.subunit.required = False
+EmployeeEditModel.user_type.required = False
+EmployeeEditModel.email.required = False
+
+
 class FullEmployeeModel(CommonEmployeeModel, EmployeeIdModel):
-    pass
+    fired = fields.Boolean(
+        required=True,
+        description="Is the employee fired or not",
+        example=False
+    )
 
 
 class TokenModel(ModelCreator):
