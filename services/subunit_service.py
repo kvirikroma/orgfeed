@@ -20,7 +20,7 @@ def subunit_write_access(writer_id: str, leader_id: str) -> None:
         abort(403, "Non-admins can not create new subunits or edit existing ones")
 
 
-def create_subunit(creator_id: str, name: str, address: str, leader: str, phone: str, email: str, **kwargs) -> Subunit:
+def create_subunit(creator_id: str, name: str, address: str, leader: str, phone: str, email: str, **kwargs) -> dict:
     subunit_write_access(creator_id, leader)
     if not employee_repository.get_employee_by_id(leader):
         abort(404, "Leader not found")
@@ -35,13 +35,13 @@ def create_subunit(creator_id: str, name: str, address: str, leader: str, phone:
     subunit.phone = phone
     subunit.email = email
     subunit_repository.add_or_edit_subunit(subunit)
-    return subunit_repository.get_subunit_by_email(email)  # re-getting object to fill the ID field
+    return prepare_subunit(subunit_repository.get_subunit_by_email(email))  # re-getting object to fill the ID field
 
 
 def edit_subunit(
         editor_id: str, subunit_id: str, name: str = None, address: str = None,
         leader: str = None, phone: str = None, email: str = None, **kwargs
-) -> Subunit:
+) -> dict:
     subunit_write_access(editor_id, leader)
     subunit = subunit_repository.get_subunit_by_id(subunit_id)
     if not subunit:
@@ -56,7 +56,7 @@ def edit_subunit(
         abort(422, "You must specify at least one field to edit")
     for existing, new in (('name', name), ('address', address), ('leader', leader), ('phone', phone), ('email', email)):
         setattr(subunit, existing, new or getattr(subunit, existing))
-    return subunit_repository.add_or_edit_subunit(subunit)
+    return prepare_subunit(subunit_repository.add_or_edit_subunit(subunit))
 
 
 def get_subunit(subunit_id: str) -> dict:

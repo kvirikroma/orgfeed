@@ -4,10 +4,10 @@ from uuid import UUID
 from flask import abort
 
 
-default_page_size = 20
+default_page_size = 16
 
 
-def check_page(request) -> int:
+def get_page(request) -> int:
     page = request.args.get("page")
     if not page or not page.isdigit():
         abort(400, "Page query parameter must exist and be integer")
@@ -19,7 +19,11 @@ def check_page(request) -> int:
     return page
 
 
-def check_uuid(value: str) -> str:
+def get_uuid(request) -> str:
+    if isinstance(request, str):
+        value = request
+    else:
+        value = request.args.get('id')
     try:
         UUID(value)
     except ValueError:

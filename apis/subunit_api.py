@@ -2,7 +2,7 @@ from flask_restx.namespace import Namespace
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from services import subunit_service, check_page, check_uuid
+from services import subunit_service, get_page, get_uuid
 from .utils import OptionsResource
 from models import required_query_params, update_dict
 from apis.employee_api import full_employee
@@ -40,7 +40,7 @@ class Subunit(OptionsResource):
     @jwt_required
     def get(self):
         """Get info about subunit"""
-        return subunit_service.get_subunit(check_uuid(request.args.get("id"))), 200
+        return subunit_service.get_subunit(get_uuid(request)), 200
 
     @api.doc('edit_subunit', security='apikey', params=required_query_params({'id': 'SubUnit ID'}))
     @api.marshal_with(full_subunit, code=201)
@@ -52,7 +52,7 @@ class Subunit(OptionsResource):
     @jwt_required
     def put(self):
         """Change info about subunit (only for admins)"""
-        return subunit_service.edit_subunit(get_jwt_identity(), check_uuid(request.args.get("id")), **api.payload), 201
+        return subunit_service.edit_subunit(get_jwt_identity(), get_uuid(request), **api.payload), 201
 
     @api.doc('add_subunit', security='apikey')
     @api.marshal_with(full_subunit, code=201)

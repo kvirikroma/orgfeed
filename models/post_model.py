@@ -36,7 +36,7 @@ class PostBaseModel(ModelCreator):
         min_length=0,
         max_length=81920
     )
-    type = fields.String(
+    post_type = fields.String(
         required=True,
         description="Type of the post",
         example=PostType.organization_news.name,

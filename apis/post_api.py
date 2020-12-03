@@ -1,12 +1,12 @@
 from flask_restx.namespace import Namespace
 from flask_restx import fields
-from flask import request
+from flask import request, abort
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from services import post_service, check_page, check_uuid
+from services import post_service, get_page, get_uuid
 from .utils import OptionsResource
 from models import pages_count_model, required_query_params, DATETIME_FORMAT
-from models.post_model import PostCreateModel, PostFullModel, PostsStatistics
+from models.post_model import PostCreateModel, PostFullModel, PostsStatistics, PostStatus
 
 
 api = Namespace("post", "Endpoints for news posts")
@@ -57,7 +57,7 @@ class Post(OptionsResource):
     @jwt_required
     def post(self):
         """Create a post"""
-        return None, 201
+        return post_service.create_post(get_jwt_identity(), **api.payload), 201
 
     @api.doc("edit_post", security='apikey', params=required_query_params({"id": "Post ID"}))
     @api.marshal_with(full_post, code=201)
@@ -67,7 +67,7 @@ class Post(OptionsResource):
     @jwt_required
     def put(self):
         """Edit a post"""
-        return None, 201
+        return post_service.edit_post(get_jwt_identity(), get_uuid(request), **api.payload), 201
 
     @api.doc("get_post", security='apikey', params=required_query_params({"id": "Post ID"}))
     @api.marshal_with(full_post, code=200)
@@ -75,7 +75,7 @@ class Post(OptionsResource):
     @jwt_required
     def get(self):
         """Get a post by ID"""
-        return None, 200
+        return post_service.get_post(get_uuid(request)), 200
 
     @api.doc("delete_post", security='apikey', params=required_query_params(
         {"id": "Post ID", "with_attachments": "Delete also every attachment of the post"}
@@ -86,7 +86,7 @@ class Post(OptionsResource):
     @jwt_required
     def delete(self):
         """Remove a post"""
-        return None, 201
+        return post_service.delete_post(get_jwt_identity(), get_uuid(request)), 201
 
 
 @api.route('/approve')
@@ -98,7 +98,40 @@ class ApprovePost(OptionsResource):
     @jwt_required
     def post(self):
         """Approve a post (only for moderators and admins)"""
-        return None, 201
+        return post_service.set_post_status(get_jwt_identity(), get_uuid(request), PostStatus.posted), 201
+
+    @api.doc("disapprove_post", security='apikey', params=required_query_params({"id": "Post ID"}))
+    @api.marshal_with(full_post, code=201)
+    @api.response(404, description="Post not found")
+    @api.response(403, description="Have no privileges to disapprove this post")
+    @jwt_required
+    def delete(self):
+        """Disapprove a post (only for moderators and admins)"""
+        return post_service.set_post_status(get_jwt_identity(), get_uuid(request), PostStatus.under_consideration), 201
+
+
+@api.route('/return')
+class ApprovePost(OptionsResource):
+    @api.doc("return_post", security='apikey', params=required_query_params({"id": "Post ID"}))
+    @api.marshal_with(full_post, code=201)
+    @api.response(404, description="Post not found")
+    @api.response(403, description="Have no privileges to return this post")
+    @jwt_required
+    def post(self):
+        """Return a post for further improvements (only for moderators and admins)"""
+        return post_service.set_post_status(get_jwt_identity(), get_uuid(request), PostStatus.returned_for_improvement), 201
+
+
+@api.route('/reject')
+class ApprovePost(OptionsResource):
+    @api.doc("return_post", security='apikey', params=required_query_params({"id": "Post ID"}))
+    @api.marshal_with(full_post, code=201)
+    @api.response(404, description="Post not found")
+    @api.response(403, description="Have no privileges to reject this post")
+    @jwt_required
+    def post(self):
+        """Totally reject a post (only for moderators and admins)"""
+        return post_service.set_post_status(get_jwt_identity(), get_uuid(request), PostStatus.rejected), 201
 
 
 @api.route('/archive')
@@ -110,7 +143,7 @@ class ArchivePost(OptionsResource):
     @jwt_required
     def post(self):
         """Archive a post (only for moderators and admins)"""
-        return None, 201
+        return post_service.set_post_status(get_jwt_identity(), get_uuid(request), PostStatus.archived), 201
 
     @api.doc("get_archived_posts", security='apikey', params=required_query_params({'page': 'page number'}))
     @api.marshal_with(counted_posts_list, code=200)
@@ -118,6 +151,25 @@ class ArchivePost(OptionsResource):
     def get(self):
         """Get archived posts"""
         return None, 200
+
+    @api.doc("unarchive_post", security='apikey', params=required_query_params({
+        "id": "Post ID",
+        "status": f"Status to give after unarchiving, values: {[i.name for i in PostStatus if i != PostStatus.archived]}"
+    }))
+    @api.marshal_with(full_post, code=201)
+    @api.response(404, description="Post not found")
+    @api.response(403, description="Have no privileges to unarchive this post")
+    @api.response(422, description="Incorrect status value")
+    @jwt_required
+    def delete(self):
+        """Unarchive a post (only for moderators and admins)"""
+        try:
+            new_status = PostStatus[request.args.get('status')]
+            if new_status == PostStatus.archived:
+                raise KeyError
+        except KeyError:
+            return abort(422, "Incorrect status value")
+        return post_service.set_post_status(get_jwt_identity(), get_uuid(request), new_status), 201
 
 
 @api.route('/biggest')
@@ -131,7 +183,7 @@ class BiggestPost(OptionsResource):
     @jwt_required
     def get(self):
         """Get biggest post by date"""
-        return None, 201
+        return post_service.get_biggest_post(request.args.get("day"), request.args.get("include_archived")), 201
 
 
 @api.route('/statistics')
@@ -147,4 +199,10 @@ class PostStat(OptionsResource):
     @jwt_required
     def get(self):
         """Get statistics of posts for each employee of the subunit"""
-        return None, 200
+        return post_service.get_statistics(
+            get_uuid(request),
+            request.args.get("start_year"),
+            request.args.get("start_month"),
+            request.args.get("end_year"),
+            request.args.get("end_month")
+        ), 200

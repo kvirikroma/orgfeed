@@ -5,7 +5,7 @@ from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.datastructures import FileStorage
 
-from services import attachment_service, check_page, check_uuid
+from services import attachment_service, get_page, get_uuid
 from .utils import OptionsResource
 from models import pages_count_model, required_query_params
 from models.attachment_model import AttachmentModel
@@ -47,7 +47,7 @@ class Attachment(OptionsResource):
     @jwt_required
     def post(self):
         """Upload an attachment to the server"""
-        return None, 201
+        return attachment_service.save_attachment(get_jwt_identity(), request.files.get('file')), 201
 
     @api.doc("attachment_download", params=required_query_params({"id": "Attachment ID"}), security='apikey')
     @api.response(200, description="Success (response contains a requested file)")
@@ -55,7 +55,7 @@ class Attachment(OptionsResource):
     @jwt_required
     def get(self):
         """Download an attachment from server"""
-        return None, 200
+        return attachment_service.get_attachment(get_uuid(request))
 
     @api.doc("attachment_remove", params=required_query_params({"id": "Attachment ID"}), security='apikey')
     @api.response(201, description="Success")
@@ -64,7 +64,7 @@ class Attachment(OptionsResource):
     @jwt_required
     def delete(self):
         """Delete an attachment from server"""
-        return None, 201
+        return attachment_service.delete_attachment(get_jwt_identity(), get_uuid(request)), 201
 
 
 @api.route('/employee')
@@ -78,4 +78,4 @@ class UserAttachments(OptionsResource):
     @jwt_required
     def get(self):
         """Get list of employee`s attachments"""
-        return None, 200
+        return attachment_service.get_all_attachments(get_uuid(request), get_page(request)), 200

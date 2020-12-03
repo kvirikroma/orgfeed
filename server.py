@@ -13,6 +13,7 @@ from apis import api, cors_headers
 from frontend_bindings.pages import bind_frontend_pages
 from frontend_bindings.errors import bind_error_pages
 from repositories import db
+import config
 
 app = Flask(__name__)
 app.register_blueprint(api.blueprint, url_prefix='/api/v1')
@@ -25,8 +26,9 @@ if not (os.environ.get('JWT_KEY') and os.environ.get("PGPASSWORD")):
     raise RuntimeError("Cannot find some env variables related to security")
 
 app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY'] = os.environ.get('JWT_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] =\
-    'postgresql+psycopg2://orgfeed_user:' + os.environ.get("PGPASSWORD") + '@/orgfeed_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNECTION_TEMPLATE.format(
+    'orgfeed_user', os.environ.get("PGPASSWORD"), 'orgfeed_db'
+)
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 app.config["MAX_CONTENT_PATH"] = app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 5

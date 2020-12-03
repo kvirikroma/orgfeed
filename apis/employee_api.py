@@ -3,7 +3,7 @@ from flask import request
 from flask_jwt_extended import (jwt_required, get_jwt_identity, jwt_refresh_token_required,
                                 create_access_token, create_refresh_token)
 
-from services import employee_service, check_uuid
+from services import employee_service, get_uuid
 from .utils import OptionsResource
 from models import required_query_params
 from models.employee_model import AuthModel, FullEmployeeModel, EmployeeRegistrationModel, TokenModel, EmployeeEditModel
@@ -45,7 +45,7 @@ class Employee(OptionsResource):
     @jwt_required
     def get(self):
         """Get employee`s account info"""
-        return employee_service.get_employee(check_uuid(request.args.get("id"))), 200
+        return employee_service.get_employee(get_uuid(request)), 200
 
     @api.doc('edit_employee', security='apikey', params=required_query_params({'id': 'employee ID'}))
     @api.marshal_with(full_employee, code=201)
@@ -57,7 +57,7 @@ class Employee(OptionsResource):
     @jwt_required
     def put(self):
         """Edit employee`s account info (only for admins)"""
-        return employee_service.edit_employee(get_jwt_identity(), check_uuid(request.args.get("id")), **api.payload), 201
+        return employee_service.edit_employee(get_jwt_identity(), get_uuid(request), **api.payload), 201
 
     @api.doc('employee_register', security='apikey')
     @api.expect(employee_registration, validate=True)
@@ -106,4 +106,4 @@ class AuthRefresh(OptionsResource):
     @jwt_required
     def get(self):
         """Get fired admins and moderators of the subunit"""
-        return employee_service.get_fired_moderators(check_uuid(request.args.get("id"))), 200
+        return employee_service.get_fired_moderators(get_uuid(request)), 200
