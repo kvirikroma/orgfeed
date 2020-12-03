@@ -1,11 +1,13 @@
+from datetime import date
+
 from flask_restx.namespace import Namespace
-from flask import request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import request, abort
+from flask_jwt_extended import jwt_required
 
 from services import post_service, get_page, get_uuid
 from .utils import OptionsResource
-from apis.post_api import counted_posts_list
-from models import required_query_params
+from apis.post_api import counted_posts_list, full_post
+from models import required_query_params, DATETIME_FORMAT
 from models.post_model import PostType
 
 
@@ -54,3 +56,28 @@ class SubunitAnnouncements(OptionsResource):
     def get(self):
         """Get announcements feed of the subunit"""
         return post_service.get_feed(PostType.subunit_announcement, get_page(request), get_uuid(request)), 200
+
+
+@api.route('/biggest')
+class BiggestPost(OptionsResource):
+    @api.doc("get_biggest_post", security='apikey', params=required_query_params({
+        'description': f"Date in '{DATETIME_FORMAT}' format (example: '2020-12-31')",
+        "include_archived": {'description': "Search in archived posts or not", "enum": ['true', 'false']}
+    }))
+    @api.marshal_with(full_post, code=201)
+    @api.response(404, description="Post not found")
+    @api.response(422, description="Can not parse parameters")
+    @jwt_required
+    def get(self):
+        """Get biggest post by date"""
+        try:
+            day = date.fromisoformat(request.args.get("day"))
+        except ValueError:
+            return abort(422, "Incorrect date format")
+        if request.args.get("include_archived", '').lower() == 'true':
+            include_archived = True
+        elif request.args.get("include_archived", '').lower() == 'false':
+            include_archived = False
+        else:
+            return abort(422, "Incorrect 'include_archived' parameter")
+        return post_service.get_biggest_post(day, include_archived), 201

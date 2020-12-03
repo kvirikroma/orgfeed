@@ -1,7 +1,5 @@
 from typing import List
 
-from sqlalchemy.sql.operators import or_
-
 from . import db, Employee
 from models.employee_model import EmployeeType
 
@@ -28,6 +26,6 @@ def delete_employee(employee: Employee) -> None:
 def fired_moderators_of_subunit(subunit_id: str) -> List[Employee]:
     return db.session.query(Employee).\
         filter(Employee.subunit == subunit_id).\
-        filter(or_(Employee.user_type == EmployeeType.admin.value, Employee.user_type == EmployeeType.moderator.value)).\
+        filter(Employee.user_type.in_(EmployeeType.admin.value, EmployeeType.moderator.value)).\
         filter(Employee.fired).\
         all()

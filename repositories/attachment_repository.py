@@ -3,6 +3,7 @@ from os import path, listdir, removedirs, remove, makedirs, stat
 
 from flask import current_app
 from werkzeug.datastructures import FileStorage
+from sqlalchemy.sql.operators import contains
 
 from . import db, Attachment
 
@@ -54,6 +55,11 @@ def add_attachment(attachment: Attachment, file: FileStorage) -> Attachment:
     return attachment
 
 
+def edit_attachment(attachment: Attachment):
+    db.session.merge(attachment)
+    db.session.commit()
+
+
 def delete_attachment(attachment: Attachment) -> None:
     remove_attachment_file_by_id(attachment.id)
     db.session.delete(attachment)
@@ -79,3 +85,16 @@ def get_user_attachments(user_id: str, page: int, page_size: int) -> List[Attach
 
 def get_user_attachments_count(user_id: str) -> int:
     return db.session.query(Attachment).filter(Attachment.author == user_id).count()
+
+
+def ensure_attachments_exist(attachment_ids: List[str]) -> bool:
+    real_count = db.session.query(Attachment).filter(Attachment.id.in_(attachment_ids)).count()
+    if real_count != len(attachment_ids):
+        return False
+    return True
+
+
+def add_attachments_to_post(post_id: str or None, attachment_ids: List[str]) -> None:
+    return db.session.query(Attachment).\
+        filter(Attachment.id.in_(attachment_ids)).\
+        update({"post": post_id}, synchronize_session='fetch')

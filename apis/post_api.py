@@ -3,10 +3,10 @@ from flask_restx import fields
 from flask import request, abort
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from services import post_service, get_page, get_uuid
+from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
-from models import pages_count_model, required_query_params, DATETIME_FORMAT
-from models.post_model import PostCreateModel, PostFullModel, PostsStatistics, PostStatus
+from models import pages_count_model, required_query_params
+from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostsStatistics
 
 
 api = Namespace("post", "Endpoints for news posts")
@@ -19,16 +19,6 @@ post_create = api.model(
 full_post = api.model(
     "full_post_model",
     PostFullModel()
-)
-
-posts_list = api.model(
-    'list_of_posts',
-    {
-        "posts":
-            fields.List(
-                fields.Nested(full_post)
-            )
-    }
 )
 
 counted_posts_list = api.model(
@@ -63,6 +53,7 @@ class Post(OptionsResource):
     @api.marshal_with(full_post, code=201)
     @api.response(404, description="Post or attachment not found")
     @api.response(403, description="Have no privileges to edit this post")
+    @api.response(422, description="All fields are null")
     @api.expect(post_create, validate=True)
     @jwt_required
     def put(self):
@@ -150,7 +141,7 @@ class ArchivePost(OptionsResource):
     @jwt_required
     def get(self):
         """Get archived posts"""
-        return None, 200
+        return post_service.get_archived_posts(get_page(request)), 200
 
     @api.doc("unarchive_post", security='apikey', params=required_query_params({
         "id": "Post ID",
@@ -172,18 +163,15 @@ class ArchivePost(OptionsResource):
         return post_service.set_post_status(get_jwt_identity(), get_uuid(request), new_status), 201
 
 
-@api.route('/biggest')
-class BiggestPost(OptionsResource):
-    @api.doc("get_biggest_post", security='apikey', params=required_query_params({
-        "date": f"Date in '{DATETIME_FORMAT}' format",
-        "include_archived": "Search in archived posts or not ('true' or 'false')"
-    }))
-    @api.marshal_with(full_post, code=201)
-    @api.response(404, description="Post not found")
+@api.route('/of_employee')
+class Post(OptionsResource):
+    @api.doc("get_employee_posts", security='apikey', params=required_query_params({"id": "Employee ID"}))
+    @api.marshal_with(full_post, code=200, as_list=True)
+    @api.response(404, description="Employee not found")
     @jwt_required
     def get(self):
-        """Get biggest post by date"""
-        return post_service.get_biggest_post(request.args.get("day"), request.args.get("include_archived")), 201
+        """Get all employee's posts"""
+        return post_service.get_all_employee_posts(get_uuid(request)), 200
 
 
 @api.route('/statistics')

@@ -1,6 +1,6 @@
 from flask_restx import fields
 
-from . import ModelCreator, create_email_field, create_id_field, clone_model
+from . import ModelCreator, create_email_field, create_id_field, copy_field
 
 
 class SubunitIdModel(ModelCreator):
@@ -43,15 +43,11 @@ class CommonSubunitModel(ModelCreator):
 
 
 class SubunitEditModel(CommonSubunitModel):
-    pass
-
-
-clone_model(SubunitEditModel, CommonSubunitModel)
-SubunitEditModel.name.required = False
-SubunitEditModel.address.required = False
-SubunitEditModel.leader.required = False
-SubunitEditModel.phone.required = False
-SubunitEditModel.email.required = False
+    name = copy_field(CommonSubunitModel.name, required=False)
+    address = copy_field(CommonSubunitModel.address, required=False)
+    leader = copy_field(CommonSubunitModel.leader, required=False)
+    phone = copy_field(CommonSubunitModel.phone, required=False)
+    email = copy_field(CommonSubunitModel.email, required=False)
 
 
 class FullSubunitModel(SubunitIdModel, CommonSubunitModel):

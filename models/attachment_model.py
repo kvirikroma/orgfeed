@@ -1,7 +1,7 @@
 from flask_restx import fields
 
 from . import create_id_field, ModelCreator
-from config import MAX_FILE_SIZE
+from utils.config import MAX_FILE_SIZE
 
 
 class AttachmentModel(ModelCreator):

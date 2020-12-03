@@ -2,8 +2,8 @@ from enum import Enum
 
 from flask_restx import fields
 
-from apis.attachment_api import attachment, api
-from . import ModelCreator, create_id_field, create_datetime_field
+from apis.attachment_api import attachment
+from . import ModelCreator, create_id_field, create_datetime_field, copy_field
 
 
 class PostType(Enum):
@@ -19,6 +19,17 @@ class PostStatus(Enum):
     archived = 2
     returned_for_improvement = 3
     rejected = 4
+
+
+class AttachmentsListModel(ModelCreator):
+    attachments = fields.List(
+        create_id_field(
+            required=True,
+            description="Attachment ID to include into the post"
+        ),
+        description="List of an attachment IDs to include into the post",
+        required=False
+    )
 
 
 class PostBaseModel(ModelCreator):
@@ -44,14 +55,14 @@ class PostBaseModel(ModelCreator):
     )
 
 
-class PostCreateModel(PostBaseModel):
-    attachments = fields.List(
-        create_id_field(
-            required=True,
-            description="Attachment ID to include into the post"
-        ),
-        description="List of an attachment IDs to include into the post"
-    )
+class PostCreateModel(PostBaseModel, AttachmentsListModel):
+    pass
+
+
+class PostEditModel(AttachmentsListModel):
+    title = copy_field(PostBaseModel.title, required=False)
+    body = copy_field(PostBaseModel.body, required=False)
+    post_type = copy_field(PostBaseModel.post_type, required=False)
 
 
 class PostFullModel(PostBaseModel):

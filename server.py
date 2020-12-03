@@ -1,5 +1,6 @@
 import os
 import json
+import atexit
 
 from flask import Flask, request, Response
 from flask_sqlalchemy import SQLAlchemy
@@ -8,12 +9,13 @@ from flask_jwt_extended import JWTManager
 from flask_restx.api import Api
 from flask_injector import FlaskInjector
 from werkzeug.datastructures import Headers
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from apis import api, cors_headers
 from frontend_bindings.pages import bind_frontend_pages
 from frontend_bindings.errors import bind_error_pages
-from repositories import db
-import config
+from repositories import db, post_repository
+from utils import config
 
 app = Flask(__name__)
 app.register_blueprint(api.blueprint, url_prefix='/api/v1')
@@ -72,6 +74,12 @@ def after_request(response: Response):
         body = response.get_data().replace(b"<head>", b"<head><style>.models {display: none !important}</style>")
         return Response(body, response.status_code, response.headers)
     return response
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(post_repository.archive_expired_posts, 'cron', hour=2, max_instances=1, replace_existing=True)
+scheduler.start()
+atexit.register(scheduler.shutdown)
 
 
 if __name__ == "__main__":

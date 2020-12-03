@@ -21,14 +21,13 @@ class ModelCreator:
         return result
 
 
-def clone_model(destination: Type[ModelCreator], source: Type[ModelCreator]):
-    for item in dir(source):
-        if not item.startswith("__") or not item.endswith("__"):  # if item is not like __****__
-            setattr(
-                destination,
-                item,
-                type(getattr(source, item))(**getattr(source, item).__dict__)
-            )
+def copy_field(field, required: bool = None, description: str = None):
+    result = type(field)(**field.__dict__)
+    if required is not None:
+        result.required = required
+    if description is not None:
+        result.description = description
+    return result
 
 
 def create_id_field(required=False, description=""):
@@ -68,10 +67,15 @@ pages_count_model = fields.Integer(
 )
 
 
-def required_query_params(request_args: Dict[str, str]) -> Dict[str, Dict[str, str or bool]]:
+def required_query_params(request_args: Dict[str, str or Dict[str, str]]) -> Dict[str, Dict[str, str or bool]]:
     result = {}
     for item in request_args:
-        result[item] = {"description": request_args[item], "required": True}
+        if isinstance(request_args[item], str):
+            result[item] = {"description": request_args[item], "required": True}
+        elif isinstance(request_args[item], dict):
+            if not result.get(item):
+                result[item] = request_args[item]
+            result[item]['required'] = True
     return result
 
 

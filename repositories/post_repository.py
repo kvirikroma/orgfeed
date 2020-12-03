@@ -1,10 +1,11 @@
 from typing import List
-from datetime import datetime, date
+from datetime import date, datetime
 
 from sqlalchemy import func, distinct
 
 from models.post_model import PostType, PostStatus
 from . import db, Post, Subunit, Employee
+from utils import get_current_app
 
 
 def add_or_edit_post(post: Post) -> Post:
@@ -22,35 +23,74 @@ def delete_post(post: Post) -> None:
     db.session.commit()
 
 
-def get_archived_posts(page: int, page_size: int) -> List[Post]:
-    return db.session.query(Post).\
-        filter(Post.archived_on < datetime.utcnow()).\
-        limit(page_size).offset(page * page_size).\
-        all()
+def base_archive_request():
+    return db.session.query(Post).filter(Post.status == PostStatus.archived.value)
 
 
-def get_posts_by_date(day: date) -> List[Post]:
-    return db.session.query(Post).\
-        filter(Post.published_on.date() == day).\
-        all()
-
-
-def get_feed(posts_type: PostType, page: int, page_size: int) -> List[Post]:
+def base_feed_request(posts_type: PostType):
     return db.session.query(Post).\
         filter(Post.status == PostStatus.posted.value).\
-        filter(Post.type == posts_type.value).\
+        filter(Post.type == posts_type.value)
+
+
+def get_archived_posts(page: int, page_size: int) -> List[Post]:
+    return base_archive_request().\
         limit(page_size).offset(page * page_size).\
         all()
+
+
+def count_archived_posts() -> int:
+    return base_archive_request().count()
+
+
+def get_posts_by_date(day: date, include_archived: bool) -> List[Post]:
+    base_request = db.session.query(Post).\
+        filter(Post.published_on.date() == day)
+    if include_archived:
+        base_request = base_request.filter(Post.status.in_(PostStatus.archived.value, PostStatus.posted.value))
+    else:
+        base_request = base_request.filter(Post.status == PostStatus.posted.value)
+    return base_request.all()
+
+
+def get_posts_of_employee(employee_id: str) -> List[Post]:
+    return db.session.query(Post).\
+        filter(Post.author == employee_id).\
+        all()
+
+
+def get_feed(posts_type: PostType, page: int, page_size: int, subunit_id: str = None) -> List[Post]:
+    base_request = base_feed_request(posts_type)
+    if subunit_id is not None:
+        base_request = base_request.filter(Post.creator.subunit == subunit_id)
+    return base_request.limit(page_size).offset(page * page_size).all()
+
+
+def feed_count(posts_type: PostType, subunit_id: str = None) -> int:
+    base_request = base_feed_request(posts_type)
+    if subunit_id is not None:
+        base_request = base_request.filter(Post.creator.subunit == subunit_id)
+    return base_request.count()
 
 
 def get_subunit_statistics(subunit_id: str, start: date, end: date, page: int, page_size: int) -> List:
     """get number of posts for each employee in subunit (with limiting by time)"""
-    return db.session.query(distinct(Post.author), func.count('*')).\
-        filter(Subunit.id == subunit_id).\
-        filter(Subunit.id == Employee.subunit).\
-        filter(Employee.id == Post.author).\
-        filter(Post.published_on >= start).\
-        filter(Post.published_on <= end).\
-        group_by(Post.author).\
-        limit(page_size).offset(page * page_size).\
-        all()
+    # return db.session.query(distinct(Post.author), func.count('*')).\
+    #     filter(Subunit.id == subunit_id).\
+    #     filter(Subunit.id == Employee.subunit).\
+    #     filter(Employee.id == Post.author).\
+    #     filter(Post.published_on >= start).\
+    #     filter(Post.published_on <= end).\
+    #     filter(Post.status == PostStatus.posted).\
+    #     group_by(Post.author).\
+    #     limit(page_size).offset(page * page_size).\
+    #     all()
+    pass
+
+
+def archive_expired_posts() -> None:
+    with get_current_app().app_context():
+        db.session.query(Post).\
+            filter(Post.status != PostStatus.archived.value).\
+            filter(Post.archived_on < datetime.utcnow()).\
+            update({"status": PostStatus.archived.value}, synchronize_session='fetch')
