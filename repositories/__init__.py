@@ -115,7 +115,7 @@ class Attachment(Base):
             _author = _author[:16] + '…'
         if len(_post) > 16:
             _post = _post[:16] + '…'
-        return f"{_author}'s post \"{_post}\""
+        return f"{_author}'s attachment to post \"{_post}\""
 
     id = Column(UUID(), nullable=False, primary_key=True, default=lambda: str(uuid.uuid4()))
     author = Column(UUID(), ForeignKey('employees.id', ondelete='NO ACTION'), nullable=False)

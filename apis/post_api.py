@@ -5,8 +5,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
-from models import pages_count_model, required_query_params, ID_EXAMPLE
-from models.post_model import PostCreateModel, PostFullModel, PostStatus
+from models import pages_count_model, required_query_params
+from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostEditModel
 
 
 api = Namespace("post", "Endpoints for news posts")
@@ -14,6 +14,11 @@ api = Namespace("post", "Endpoints for news posts")
 post_create = api.model(
     "post_create_model",
     PostCreateModel()
+)
+
+post_edit = api.model(
+    "post_edit_model",
+    PostEditModel()
 )
 
 full_post = api.model(
@@ -35,10 +40,9 @@ counted_posts_list = api.model(
 posts_statistics = api.model(
     'posts_statistics_model',
     {
-        "2020-11": fields.Raw(required=True, example={ID_EXAMPLE: 10}),
-        "2020-12": fields.Raw(required=True, example={'2b096117-95d7-4f3a-a5af-16c1acfe95d5': 0})
+        "2020-11": fields.Raw(example={'IT department': {'Gordon Freeman': 10}}),
+        "2020-12": fields.Raw(example={'Marketing department': {'Alyx Vance': 0}})
     }
-    # PostsStatistics()
 )
 
 
@@ -58,7 +62,7 @@ class Post(OptionsResource):
     @api.response(404, description="Post or attachment not found")
     @api.response(403, description="Have no privileges to edit this post")
     @api.response(422, description="All fields are null")
-    @api.expect(post_create, validate=True)
+    @api.expect(post_edit, validate=True)
     @jwt_required
     def put(self):
         """Edit a post"""
@@ -119,7 +123,7 @@ class ApprovePost(OptionsResource):
 
 @api.route('/reject')
 class ApprovePost(OptionsResource):
-    @api.doc("return_post", security='apikey', params=required_query_params({"id": "Post ID"}))
+    @api.doc("reject_post", security='apikey', params=required_query_params({"id": "Post ID"}))
     @api.marshal_with(full_post, code=201)
     @api.response(404, description="Post not found")
     @api.response(403, description="Have no privileges to reject this post")
@@ -154,7 +158,7 @@ class ArchivePost(OptionsResource):
     @api.marshal_with(full_post, code=201)
     @api.response(404, description="Post not found")
     @api.response(403, description="Have no privileges to unarchive this post")
-    @api.response(422, description="Incorrect status value")
+    @api.response(400, description="Incorrect status value")
     @jwt_required
     def delete(self):
         """Unarchive a post (only for moderators and admins)"""
@@ -163,7 +167,7 @@ class ArchivePost(OptionsResource):
             if new_status == PostStatus.archived:
                 raise KeyError
         except KeyError:
-            return abort(422, "Incorrect status value")
+            return abort(400, "Incorrect status value")
         return post_service.set_post_status(get_jwt_identity(), get_uuid(request), new_status), 201
 
 
@@ -186,14 +190,20 @@ class PostStat(OptionsResource):
         "end_year": "Year to finish with",
         "end_month": "Month to finish with"
     }))
-    @api.marshal_with(posts_statistics, code=200)
+    @api.response(code=200, description="Success", model=posts_statistics)
+    @api.response(code=400, description="Incorrect date parameters", model=posts_statistics)
     @jwt_required
     def get(self):
         """Get statistics of posts for each employee of the each subunit"""
-        return post_service.get_statistics(
-            get_uuid(request),
-            request.args.get("start_year"),
-            request.args.get("start_month"),
-            request.args.get("end_year"),
-            request.args.get("end_month")
-        ), 200
+        start_year = request.args.get("start_year")
+        start_month = request.args.get("start_month")
+        end_year = request.args.get("end_year")
+        end_month = request.args.get("end_month")
+        if not all(param.isdigit() for param in (start_year, start_month, end_year, end_month)):
+            abort(400, "Date values must be integers")
+        return post_service.get_statistics(*(int(param) for param in (
+            start_year,
+            start_month,
+            end_year,
+            end_month
+        ))), 200

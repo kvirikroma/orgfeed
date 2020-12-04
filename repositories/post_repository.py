@@ -1,10 +1,10 @@
 from typing import List
 from datetime import date, datetime
 
-from sqlalchemy import func, distinct
+from sqlalchemy import Date
 
 from models.post_model import PostType, PostStatus
-from . import db, Post, Subunit, Employee
+from . import db, Post, Employee
 from utils import get_current_app
 
 
@@ -33,6 +33,12 @@ def base_feed_request(posts_type: PostType):
         filter(Post.type == posts_type.value)
 
 
+def feed_request_for_subunit(base_request, subunit_id: str):
+    return base_request.\
+        filter(Employee.subunit == subunit_id).\
+        filter(Post.author == Employee.id)
+
+
 def get_archived_posts(page: int, page_size: int) -> List[Post]:
     return base_archive_request().\
         limit(page_size).offset(page * page_size).\
@@ -45,9 +51,9 @@ def count_archived_posts() -> int:
 
 def get_posts_by_date(day: date, include_archived: bool) -> List[Post]:
     base_request = db.session.query(Post).\
-        filter(Post.published_on.date() == day)
+        filter(Post.published_on.cast(Date) == day)
     if include_archived:
-        base_request = base_request.filter(Post.status.in_(PostStatus.archived.value, PostStatus.posted.value))
+        base_request = base_request.filter(Post.status.in_((PostStatus.archived.value, PostStatus.posted.value)))
     else:
         base_request = base_request.filter(Post.status == PostStatus.posted.value)
     return base_request.all()
@@ -62,23 +68,22 @@ def get_posts_of_employee(employee_id: str) -> List[Post]:
 def get_feed(posts_type: PostType, page: int, page_size: int, subunit_id: str = None) -> List[Post]:
     base_request = base_feed_request(posts_type)
     if subunit_id is not None:
-        base_request = base_request.filter(Post.creator.subunit == subunit_id)
+        base_request = feed_request_for_subunit(base_request, subunit_id)
     return base_request.limit(page_size).offset(page * page_size).all()
 
 
 def feed_count(posts_type: PostType, subunit_id: str = None) -> int:
     base_request = base_feed_request(posts_type)
     if subunit_id is not None:
-        base_request = base_request.filter(Post.creator.subunit == subunit_id)
+        base_request = feed_request_for_subunit(base_request, subunit_id)
     return base_request.count()
 
 
-def get_posts_by_period(start: date, end: date, page: int, page_size: int) -> List:
+def get_posts_by_period(start: date, end: date) -> List:
     return db.session.query(Post).\
-        filter(Post.status == PostStatus.posted.value).\
+        filter(Post.status.in_((PostStatus.posted.value, PostStatus.archived.value))).\
         filter(Post.published_on >= start).\
-        filter(Post.published_on <= end).\
-        limit(page_size).offset(page * page_size).\
+        filter(Post.published_on < end).\
         all()
 
 

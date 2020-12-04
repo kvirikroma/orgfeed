@@ -61,7 +61,7 @@ class SubunitAnnouncements(OptionsResource):
 @api.route('/biggest')
 class BiggestPost(OptionsResource):
     @api.doc("get_biggest_post", security='apikey', params=required_query_params({
-        'description': f"Date in '{DATETIME_FORMAT}' format (example: '2020-12-31')",
+        "day": f"Date in '{DATETIME_FORMAT}' format (example: '2020-12-31')",
         "include_archived": {'description': "Search in archived posts or not", "enum": ['true', 'false']}
     }))
     @api.marshal_with(full_post, code=201)

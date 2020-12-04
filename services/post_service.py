@@ -1,7 +1,7 @@
 from typing import List, Dict
 from datetime import date, datetime, timedelta
 from uuid import uuid4
-from math import ceil
+from math import ceil, floor
 
 from flask import abort
 
@@ -12,9 +12,12 @@ from . import attachment_service, any_non_nones, default_page_size
 
 
 def prepare_post(post: Post) -> dict:
+    if not post:
+        return {}
     result = post.__dict__
     result['post_type'] = PostType(post.type).name
     result['status'] = PostStatus(post.status).name
+    result['size'] = calculate_post_size(post)
     result['attachments'] = [attachment_service.prepare_attachment(attachment) for attachment in post.attachments]
     return result
 
@@ -39,28 +42,38 @@ def feed_pages_count(posts_type: PostType, subunit_id: str = None):
 
 
 def get_post(post_id: str) -> dict:
-    return prepare_post(post_repository.get_post_by_id(post_id))
+    post = post_repository.get_post_by_id(post_id)
+    if not post:
+        abort(404, "Post not found")
+    return prepare_post(post)
 
 
-def create_post(creator_id: str, title: str, body: str, post_type: str, attachments: List[str], **kwargs) -> dict:
-    if not attachment_repository.ensure_attachments_exist(attachments):
+def create_post(creator_id: str, title: str, body: str, post_type: str, attachments: List[str] = None, **kwargs) -> dict:
+    if attachments and not attachment_repository.ensure_attachments_exist(attachments):
         abort(404, "Attachment not found")
     post = Post()
-    post.creator = creator_id
+    post.author = creator_id
     post.type = PostType[post_type].value
     post.title = title
     post.body = body
-    post.status = PostStatus.posted
     post.id = str(uuid4())
     creator = employee_repository.get_employee_by_id(creator_id)
     if not creator or creator.user_type == EmployeeType.user.value:
-        post.status = PostStatus.under_consideration
+        post.status = PostStatus.under_consideration.value
+    else:
+        post.status = PostStatus.posted.value
+        post.published_on = datetime.utcnow() + timedelta(seconds=1)
+        post.approved_by = creator_id
     post_repository.add_or_edit_post(post)
-    attachment_repository.add_attachments_to_post(post.id, attachments)
+    if attachments:
+        attachment_repository.add_attachments_to_post(post.id, attachments)
     return get_post(post.id)
 
 
-def edit_post(editor_id: str, post_id: str, title: str, body: str, post_type: str, attachments: List[str], **kwargs) -> dict:
+def edit_post(
+        editor_id: str, post_id: str, title: str = None, body: str = None,
+        post_type: str = None, attachments: List[str] = None, **kwargs
+) -> dict:
     if not any_non_nones((title, body, post_type, attachments)):
         abort(422, "All fields are null")
     post = post_repository.get_post_by_id(post_id)
@@ -70,11 +83,13 @@ def edit_post(editor_id: str, post_id: str, title: str, body: str, post_type: st
         editor = employee_repository.get_employee_by_id(editor_id)
         if not editor or editor.user_type != EmployeeType.admin.value:
             abort(403, "Non-admins can not edit posts of other users")
-    for existing, new in (('title', title), ('body', body), ('post_type', post_type)):
+    for existing, new in (('title', title), ('body', body), ('type', post_type)):
         setattr(post, existing, new or getattr(post, existing))
     post_repository.add_or_edit_post(post)
     if attachments is not None:
-        attachment_repository.add_attachments_to_post(None, [attachment.id for attachment in post.attachments])
+        current_attachments = [attachment.id for attachment in post.attachments]
+        if current_attachments:
+            attachment_repository.add_attachments_to_post(None, current_attachments)
         attachment_repository.add_attachments_to_post(post.id, attachments)
     return get_post(post.id)
 
@@ -87,14 +102,14 @@ def set_post_status(setter_id: str, post_id: str, status: PostStatus) -> dict:
     if not editor or editor.user_type == EmployeeType.user.value:
         abort(403, "Non-(admins/moderators) can not change post statuses")
     if post.status != status.value:
-        if status.value == PostStatus.archived:
+        if status == PostStatus.archived:
             post.archived_on = datetime.utcnow()
-        if status.value == PostStatus.posted:
+        if status == PostStatus.posted:
             post.published_on = datetime.utcnow()
             post.approved_by = setter_id
         if post.status == PostStatus.archived.value:
             post.archived_on = datetime.utcnow() + timedelta(hours=4380)
-    post.status = status.value
+        post.status = status.value
     return prepare_post(post_repository.add_or_edit_post(post))
 
 
@@ -117,24 +132,46 @@ def get_all_employee_posts(employee_id: str) -> List[dict]:
 
 def get_biggest_post(day: date, include_archived: bool) -> dict:
     posts_of_day = prepare_posts_list(post_repository.get_posts_by_date(day, include_archived))
+    if not posts_of_day:
+        abort(404, "Post not found")
     return max(posts_of_day, key=lambda post: post["size"])
 
 
-def get_statistics(
-        subunit_id: str, start_year: int, start_month: int, end_year: int, end_month: int
-) -> List[Dict[str, str or int]]:
-    if not subunit_repository.get_subunit_by_id(subunit_id):
-        abort(404, "Subunit not found")
+def get_statistics(start_year: int, start_month: int, end_year: int, end_month: int) -> Dict[str, Dict[str, Dict[str, int]]]:
+    def calculate_iso_month(day: date) -> str:
+        return str.join('-', day.isoformat().split('-')[:-1])
+
     end_month += 1
     if end_month > 12:
         end_year += 1
         end_month = 1
     try:
         start_date = date(start_year, start_month, 1)
-        end_date = date(end_year, end_month, 1) - timedelta(days=1)
+        end_date = date(end_year, end_month, 1)
     except ValueError:
-        abort(422, 'Invalid date given')
-    pass
+        return abort(422, 'Invalid date given')
+    months_count = (end_month - start_month) + (end_year - start_year) * 12
+    if months_count <= 0:
+        abort(422, "End is earlier than start")
+    months_full = []
+    for month in range(months_count):
+        current_month = ((start_month - 1 + month) % 12) + 1
+        current_year = (start_year + floor((start_month - 1 + month) / 12))
+        months_full.append(date(current_year, current_month, 1))
+    months = [calculate_iso_month(month) for month in months_full]
+    all_posts = post_repository.get_posts_by_period(start_date, end_date)
+    all_subunits = subunit_repository.get_all_subunits()
+    posts_by_months = {
+        month: {
+            subunit.name: {
+                employee.full_name: 0 for employee in subunit.employees
+            } for subunit in all_subunits
+        } for month in months
+    }
+    for post in all_posts:
+        month = calculate_iso_month(post.published_on.date())
+        posts_by_months[month][post.creator.subunit_ref.name][post.creator.full_name] += 1
+    return posts_by_months
 
 
 def get_feed(post_type: PostType, page: int, subunit_id: str = None) -> Dict[str, int or dict]:

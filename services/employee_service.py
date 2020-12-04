@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 
 import bcrypt
 from flask import abort
@@ -115,3 +115,7 @@ def get_fired_moderators(subunit_id: str) -> List[dict]:
     if not subunit_repository.get_subunit_by_id(subunit_id):
         abort(404, "Subunit not found")
     return [prepare_employee(employee) for employee in employee_repository.fired_moderators_of_subunit(subunit_id)]
+
+
+def get_multiple_employees(employee_ids: Iterable[str]) -> List[dict]:
+    return [prepare_employee(employee) for employee in employee_repository.get_employee_by_id_list(employee_ids)]

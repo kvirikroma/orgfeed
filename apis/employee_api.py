@@ -107,3 +107,18 @@ class AuthRefresh(OptionsResource):
     def get(self):
         """Get fired admins and moderators of the subunit"""
         return employee_service.get_fired_moderators(get_uuid(request)), 200
+
+
+@api.route('/multiple')
+class AuthRefresh(OptionsResource):
+    @api.doc('get_multiple_employees', security='apikey', params=required_query_params(
+        {'ids': 'Employee IDs, separated by commas'}
+    ))
+    @api.marshal_with(full_employee, code=200, as_list=True)
+    @jwt_required
+    def get(self):
+        """Get multiple employees at a time"""
+        ids = request.args.get('ids').replace(' ', '').strip(',').split(',')
+        for employee_id in ids:
+            get_uuid(employee_id)
+        return employee_service.get_multiple_employees(ids), 200

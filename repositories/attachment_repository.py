@@ -3,7 +3,6 @@ from os import path, listdir, removedirs, remove, makedirs, stat
 
 from flask import current_app
 from werkzeug.datastructures import FileStorage
-from sqlalchemy.sql.operators import contains
 
 from . import db, Attachment
 
@@ -95,6 +94,7 @@ def ensure_attachments_exist(attachment_ids: List[str]) -> bool:
 
 
 def add_attachments_to_post(post_id: str or None, attachment_ids: List[str]) -> None:
-    return db.session.query(Attachment).\
+    db.session.query(Attachment).\
         filter(Attachment.id.in_(attachment_ids)).\
         update({"post": post_id}, synchronize_session='fetch')
+    db.session.commit()
