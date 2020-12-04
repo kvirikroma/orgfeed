@@ -73,19 +73,13 @@ def feed_count(posts_type: PostType, subunit_id: str = None) -> int:
     return base_request.count()
 
 
-def get_subunit_statistics(subunit_id: str, start: date, end: date, page: int, page_size: int) -> List:
-    """get number of posts for each employee in subunit (with limiting by time)"""
-    # return db.session.query(distinct(Post.author), func.count('*')).\
-    #     filter(Subunit.id == subunit_id).\
-    #     filter(Subunit.id == Employee.subunit).\
-    #     filter(Employee.id == Post.author).\
-    #     filter(Post.published_on >= start).\
-    #     filter(Post.published_on <= end).\
-    #     filter(Post.status == PostStatus.posted).\
-    #     group_by(Post.author).\
-    #     limit(page_size).offset(page * page_size).\
-    #     all()
-    pass
+def get_posts_by_period(start: date, end: date, page: int, page_size: int) -> List:
+    return db.session.query(Post).\
+        filter(Post.status == PostStatus.posted.value).\
+        filter(Post.published_on >= start).\
+        filter(Post.published_on <= end).\
+        limit(page_size).offset(page * page_size).\
+        all()
 
 
 def archive_expired_posts() -> None:

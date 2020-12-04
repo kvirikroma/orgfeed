@@ -21,7 +21,18 @@ if [ -d ./.venv ]; then
     fi
 fi
 
-if ! python3 -m venv .venv; then
+export COMMAND
+if command -v python3.9 > /dev/null; then
+    COMMAND=python3.9
+elif command -v python3.8 > /dev/null; then
+    COMMAND=python3.8
+elif command -v python3.7 > /dev/null; then
+    COMMAND=python3.7
+else
+    COMMAND=python3
+fi
+
+if ! $COMMAND -m venv .venv; then
     if ! apt-get install -y python3-venv &&\
     python3 -m venv .venv; then
         echo "Error"

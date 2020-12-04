@@ -106,16 +106,3 @@ class PostFullModel(PostBaseModel):
         fields.Nested(attachment),
         description="List of an attachments of the post"
     )
-
-
-class PostsStatistics(ModelCreator):
-    employee_id = create_id_field(
-        required=True,
-        description="ID of an employee"
-    )
-    posts = fields.Integer(
-        required=True,
-        description="Count of an employee`s posts",
-        example=32,
-        min=0
-    )

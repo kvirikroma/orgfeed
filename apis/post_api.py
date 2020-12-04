@@ -5,8 +5,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
-from models import pages_count_model, required_query_params
-from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostsStatistics
+from models import pages_count_model, required_query_params, ID_EXAMPLE
+from models.post_model import PostCreateModel, PostFullModel, PostStatus
 
 
 api = Namespace("post", "Endpoints for news posts")
@@ -34,7 +34,11 @@ counted_posts_list = api.model(
 
 posts_statistics = api.model(
     'posts_statistics_model',
-    PostsStatistics()
+    {
+        "2020-11": fields.Raw(required=True, example={ID_EXAMPLE: 10}),
+        "2020-12": fields.Raw(required=True, example={'2b096117-95d7-4f3a-a5af-16c1acfe95d5': 0})
+    }
+    # PostsStatistics()
 )
 
 
@@ -180,13 +184,12 @@ class PostStat(OptionsResource):
         "start_year": "Year to start from",
         "start_month": "Month to start from",
         "end_year": "Year to finish with",
-        "end_month": "Month to finish with",
-        "subunit": "Subunit to get data from"
+        "end_month": "Month to finish with"
     }))
-    @api.marshal_with(posts_statistics, code=200, as_list=True)
+    @api.marshal_with(posts_statistics, code=200)
     @jwt_required
     def get(self):
-        """Get statistics of posts for each employee of the subunit"""
+        """Get statistics of posts for each employee of the each subunit"""
         return post_service.get_statistics(
             get_uuid(request),
             request.args.get("start_year"),
