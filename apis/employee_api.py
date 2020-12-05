@@ -6,7 +6,8 @@ from flask_jwt_extended import (jwt_required, get_jwt_identity, jwt_refresh_toke
 from services import employee_service, get_uuid
 from .utils import OptionsResource
 from models import required_query_params
-from models.employee_model import AuthModel, FullEmployeeModel, EmployeeRegistrationModel, TokenModel, EmployeeEditModel
+from models.employee_model import (AuthModel, FullEmployeeModel, EmployeeRegistrationModel,
+                                   TokenModel, EmployeeEditModel, EmployeeIdModel)
 
 
 api = Namespace('employee', description='Employees-related actions')
@@ -34,6 +35,11 @@ full_employee = api.model(
 employee_edit = api.model(
     'employee_edit_model',
     EmployeeEditModel()
+)
+
+id_model = api.model(
+    'id_model',
+    EmployeeIdModel()
 )
 
 
@@ -81,6 +87,16 @@ class Auth(OptionsResource):
     def post(self):
         """Log into an account"""
         return employee_service.get_token(**api.payload), 200
+
+
+@api.route('/id')
+class EmployeeId(OptionsResource):
+    @api.doc('get_employee_id', security='apikey')
+    @api.response(200, description="Success", model=id_model)
+    @jwt_required
+    def get(self):
+        """Get an ID by JWT token"""
+        return {"id": get_jwt_identity()}, 200
 
 
 @api.route('/auth/refresh')

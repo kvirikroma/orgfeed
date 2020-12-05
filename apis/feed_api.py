@@ -64,7 +64,7 @@ class BiggestPost(OptionsResource):
         "day": f"Date in '{DATETIME_FORMAT}' format (example: '2020-12-31')",
         "include_archived": {'description': "Search in archived posts or not", "enum": ['true', 'false']}
     }))
-    @api.marshal_with(full_post, code=201)
+    @api.marshal_with(full_post, code=200)
     @api.response(404, description="Post not found")
     @api.response(422, description="Can not parse parameters")
     @jwt_required
@@ -80,4 +80,4 @@ class BiggestPost(OptionsResource):
             include_archived = False
         else:
             return abort(422, "Incorrect 'include_archived' parameter")
-        return post_service.get_biggest_post(day, include_archived), 201
+        return post_service.get_biggest_post(day, include_archived), 200

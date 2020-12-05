@@ -191,7 +191,8 @@ class PostStat(OptionsResource):
         "end_month": "Month to finish with"
     }))
     @api.response(code=200, description="Success", model=posts_statistics)
-    @api.response(code=400, description="Incorrect date parameters", model=posts_statistics)
+    @api.response(code=400, description="Incorrect (non-integer) date parameters", model=posts_statistics)
+    @api.response(code=422, description="Invalid date given", model=posts_statistics)
     @jwt_required
     def get(self):
         """Get statistics of posts for each employee of the each subunit"""
