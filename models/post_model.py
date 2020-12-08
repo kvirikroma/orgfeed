@@ -3,6 +3,7 @@ from enum import Enum
 from flask_restx import fields
 
 from apis.attachment_api import attachment
+from apis.employee_api import full_employee
 from . import ModelCreator, create_id_field, create_datetime_field, copy_field
 
 
@@ -82,14 +83,8 @@ class PostFullModel(PostBaseModel):
         required=True,
         description="The time post was (or will be) archived on"
     )
-    author = create_id_field(
-        required=True,
-        description="ID of the author of the post"
-    )
-    approved_by = create_id_field(
-        required=False,
-        description="ID of the employee in charge of reviewing this post"
-    )
+    author = fields.Nested(full_employee)
+    approved_by = fields.Nested(full_employee)
     status = fields.String(
         required=True,
         description="Status of the post",

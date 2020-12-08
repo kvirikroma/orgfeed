@@ -75,6 +75,7 @@ class UserAttachments(OptionsResource):
         security='apikey'
     )
     @api.marshal_with(counted_attachments_list, code=200)
+    @api.response(404, description="Employee not found")
     @jwt_required
     def get(self):
         """Get list of employee`s attachments"""

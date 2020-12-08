@@ -1,5 +1,6 @@
 from flask_restx import fields
 
+from apis.employee_api import full_employee
 from . import create_id_field, ModelCreator
 from utils.config import MAX_FILE_SIZE
 
@@ -9,10 +10,7 @@ class AttachmentModel(ModelCreator):
         required=True,
         description="Attachment ID in database",
     )
-    author = create_id_field(
-        required=True,
-        description="Uploader`s ID in database"
-    )
+    author = fields.Nested(full_employee)
     post = create_id_field(
         required=True,
         description="ID of Post that contains this attachment"

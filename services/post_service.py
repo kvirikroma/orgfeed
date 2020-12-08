@@ -9,16 +9,19 @@ from repositories import post_repository, attachment_repository, employee_reposi
 from models.post_model import PostStatus, PostType
 from models.employee_model import EmployeeType
 from . import attachment_service, any_non_nones, default_page_size
+from .employee_service import prepare_employee
 
 
 def prepare_post(post: Post) -> dict:
     if not post:
         return {}
-    result = post.__dict__
+    result = post.__dict__.copy()
     result['post_type'] = PostType(post.type).name
     result['status'] = PostStatus(post.status).name
     result['size'] = calculate_post_size(post)
     result['attachments'] = [attachment_service.prepare_attachment(attachment) for attachment in post.attachments]
+    result['author'] = prepare_employee(post.creator)
+    result['approved_by'] = prepare_employee(post.approver)
     return result
 
 

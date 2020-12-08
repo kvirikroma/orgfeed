@@ -8,12 +8,16 @@ from werkzeug.datastructures import FileStorage
 from models.employee_model import EmployeeType
 from repositories import attachment_repository, employee_repository, Attachment
 from . import default_page_size
+from .employee_service import prepare_employee
 
 
 def prepare_attachment(attachment: Attachment) -> dict:
-    result = attachment.__dict__
+    result = attachment.__dict__.copy()
+    result["author"] = prepare_employee(attachment.author_ref)
     result["size"] = attachment_repository.get_attachment_size(attachment.id)
     result["filename"] = attachment_repository.get_attachment_path_and_filename(attachment.id)[1]
+    result["post"] = attachment.post
+    result["id"] = attachment.id
     return result
 
 
@@ -51,6 +55,8 @@ def attachments_pages_count(employee_id: str) -> int:
 
 
 def get_all_attachments(employee_id: str, page: int) -> Dict[str, List[Dict] or int]:
+    if not employee_repository.get_employee_by_id(employee_id):
+        abort(404, "Employee not found")
     pages_count = attachments_pages_count(employee_id)
     if page <= pages_count:
         attachments = attachment_repository.get_user_attachments(employee_id, page, default_page_size)

@@ -40,7 +40,7 @@ def check_password(password: str):
 def prepare_employee(employee: Employee, renew: bool = False) -> dict:
     if renew:
         employee = employee_repository.get_employee_by_email(employee.email)
-    result = employee.__dict__
+    result = employee.__dict__.copy()
     result["user_type"] = EmployeeType(result["user_type"]).name
     return result
 
