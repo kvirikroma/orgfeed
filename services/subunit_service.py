@@ -9,7 +9,7 @@ from .employee_service import prepare_employee
 
 
 def prepare_subunit(subunit: Subunit) -> dict:
-    result = subunit.__dict__.copy()
+    result = subunit.get_dict()
     result['employees'] = [prepare_employee(employee, renew=False) for employee in subunit.employees]
     return result
 

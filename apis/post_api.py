@@ -6,7 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
 from models import pages_count_model, required_query_params
-from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostEditModel
+from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostType, PostEditModel
 
 
 api = Namespace("post", "Endpoints for news posts")
@@ -153,7 +153,10 @@ class ArchivePost(OptionsResource):
 
     @api.doc("unarchive_post", security='apikey', params=required_query_params({
         "id": "Post ID",
-        "status": f"Status to give after unarchiving, values: {[i.name for i in PostStatus if i != PostStatus.archived]}"
+        "status": {
+            'description': "Status to give after unarchiving",
+            "enum": [i.name for i in PostStatus if i != PostStatus.archived]
+        }
     }))
     @api.marshal_with(full_post, code=201)
     @api.response(404, description="Post not found")
@@ -191,8 +194,8 @@ class PostStat(OptionsResource):
         "end_month": "Month to finish with"
     }))
     @api.response(code=200, description="Success", model=posts_statistics)
-    @api.response(code=400, description="Incorrect (non-integer) date parameters", model=posts_statistics)
-    @api.response(code=422, description="Invalid date given", model=posts_statistics)
+    @api.response(code=400, description="Incorrect (non-integer) date parameters")
+    @api.response(code=422, description="Invalid date given")
     @jwt_required
     def get(self):
         """Get statistics of posts for each employee of the each subunit"""
@@ -208,3 +211,47 @@ class PostStat(OptionsResource):
             end_year,
             end_month
         ))), 200
+
+
+@api.route('/moderation')
+class PostModeration(OptionsResource):
+    @api.doc("get_posts_moderation", security='apikey', params={
+        'page': {"description": 'page number', "required": True},
+        'id': {"description": 'SubUnit ID (if null - will return posts for the whole organization)', "required": False},
+        'type': {"description": 'Type of posts', "required": True, "enum": ['news', 'announcements']},
+        'statuses': {
+            "description":
+                f"Post statuses to return, separated with commas (allowed values: {[status.name for status in PostStatus]})",
+            "required": True
+        }
+    })
+    @api.marshal_with(counted_posts_list, code=200)
+    @api.response(code=403, description="Have no privileges to moderate posts")
+    @api.response(code=422, description="Incorrect status value")
+    @jwt_required
+    def get(self):
+        """Get posts of given types and statuses by given subunit or whole organization (only for admins and moderators)"""
+        post_type_text = request.args.get("type")
+        subunit_id = request.args.get("id")
+        if subunit_id is not None:
+            get_uuid(subunit_id)
+        if post_type_text == 'news':
+            if subunit_id:
+                post_type = PostType.subunit_news
+            else:
+                post_type = PostType.organization_news
+        elif post_type_text == 'announcements':
+            if subunit_id:
+                post_type = PostType.subunit_announcement
+            else:
+                post_type = PostType.organization_announcement
+        else:
+            return abort(400, "Incorrect type parameter")
+        statuses_raw = set(request.args.get("statuses").replace(' ', '').strip(',').split(','))
+        statuses = set()
+        for status in statuses_raw:
+            try:
+                statuses.add(PostStatus[status])
+            except KeyError:
+                abort(422, f"Incorrect status value '{status}'")
+        return post_service.get_moderation_posts(get_jwt_identity(), post_type, get_page(request), statuses, subunit_id), 200

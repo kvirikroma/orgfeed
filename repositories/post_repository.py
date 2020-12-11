@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Set
 from datetime import date, datetime
 
 from sqlalchemy import Date
+from flask_sqlalchemy import BaseQuery
 
 from models.post_model import PostType, PostStatus
 from . import db, Post, Employee
@@ -23,17 +24,15 @@ def delete_post(post: Post) -> None:
     db.session.commit()
 
 
-def base_archive_request():
+def base_archive_request() -> BaseQuery:
     return db.session.query(Post).filter(Post.status == PostStatus.archived.value)
 
 
-def base_feed_request(posts_type: PostType):
-    return db.session.query(Post).\
-        filter(Post.status == PostStatus.posted.value).\
-        filter(Post.type == posts_type.value)
+def base_feed_request(posts_type: PostType) -> BaseQuery:
+    return base_posts_request(posts_type, None, {PostStatus.posted})
 
 
-def feed_request_for_subunit(base_request, subunit_id: str):
+def base_posts_request_for_subunit(base_request: BaseQuery, subunit_id: str) -> BaseQuery:
     return base_request.\
         filter(Employee.subunit == subunit_id).\
         filter(Post.author == Employee.id)
@@ -65,17 +64,25 @@ def get_posts_of_employee(employee_id: str) -> List[Post]:
         all()
 
 
-def get_feed(posts_type: PostType, page: int, page_size: int, subunit_id: str = None) -> List[Post]:
-    base_request = base_feed_request(posts_type)
-    if subunit_id is not None:
-        base_request = feed_request_for_subunit(base_request, subunit_id)
+def base_posts_request(posts_type: PostType, subunit_id: str or None, post_statuses: Set[PostStatus]) -> BaseQuery:
+    post_statuses_int = [status.value for status in post_statuses]
+    base_request = db.session.query(Post).\
+        filter(Post.status.in_(post_statuses_int)).\
+        filter(Post.type == posts_type.value)
+    if subunit_id:
+        return base_posts_request_for_subunit(base_request, subunit_id)
+    return base_request
+
+
+def get_posts(
+        posts_type: PostType, page: int, page_size: int, post_statuses: Set[PostStatus], subunit_id: str = None
+) -> List[Post]:
+    base_request = base_posts_request(posts_type, subunit_id, post_statuses)
     return base_request.limit(page_size).offset(page * page_size).all()
 
 
-def feed_count(posts_type: PostType, subunit_id: str = None) -> int:
-    base_request = base_feed_request(posts_type)
-    if subunit_id is not None:
-        base_request = feed_request_for_subunit(base_request, subunit_id)
+def get_posts_count(posts_type: PostType, post_statuses: Set[PostStatus], subunit_id: str = None) -> int:
+    base_request = base_posts_request(posts_type, subunit_id, post_statuses)
     return base_request.count()
 
 

@@ -12,7 +12,7 @@ from .employee_service import prepare_employee
 
 
 def prepare_attachment(attachment: Attachment) -> dict:
-    result = attachment.__dict__.copy()
+    result = attachment.get_dict()
     result["author"] = prepare_employee(attachment.author_ref)
     result["size"] = attachment_repository.get_attachment_size(attachment.id)
     result["filename"] = attachment_repository.get_attachment_path_and_filename(attachment.id)[1]

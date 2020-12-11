@@ -84,7 +84,7 @@ class PostFullModel(PostBaseModel):
         description="The time post was (or will be) archived on"
     )
     author = fields.Nested(full_employee)
-    approved_by = fields.Nested(full_employee)
+    approved_by = fields.Nested(full_employee, required=False)
     status = fields.String(
         required=True,
         description="Status of the post",

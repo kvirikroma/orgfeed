@@ -83,5 +83,5 @@ atexit.register(scheduler.shutdown)
 
 
 if __name__ == "__main__":
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] *= 32
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600 * 1000000
     app.run(debug=True, host='0.0.0.0', port=5000)

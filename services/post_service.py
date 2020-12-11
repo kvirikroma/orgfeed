@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 from math import ceil, floor
@@ -15,13 +15,13 @@ from .employee_service import prepare_employee
 def prepare_post(post: Post) -> dict:
     if not post:
         return {}
-    result = post.__dict__.copy()
+    result = post.get_dict()
     result['post_type'] = PostType(post.type).name
     result['status'] = PostStatus(post.status).name
     result['size'] = calculate_post_size(post)
     result['attachments'] = [attachment_service.prepare_attachment(attachment) for attachment in post.attachments]
     result['author'] = prepare_employee(post.creator)
-    result['approved_by'] = prepare_employee(post.approver)
+    result['approved_by'] = prepare_employee(post.approver) if post.approver else None
     return result
 
 
@@ -41,7 +41,11 @@ def archive_pages_count():
 
 
 def feed_pages_count(posts_type: PostType, subunit_id: str = None):
-    return ceil(post_repository.feed_count(posts_type, subunit_id) / default_page_size)
+    return ceil(post_repository.get_posts_count(posts_type, {PostStatus.posted}, subunit_id) / default_page_size)
+
+
+def moderation_pages_count(posts_type: PostType, posts_statuses: Set[PostStatus], subunit_id: str = None):
+    return ceil(post_repository.get_posts_count(posts_type, posts_statuses, subunit_id) / default_page_size)
 
 
 def get_post(post_id: str) -> dict:
@@ -178,9 +182,13 @@ def get_statistics(start_year: int, start_month: int, end_year: int, end_month: 
 
 
 def get_feed(post_type: PostType, page: int, subunit_id: str = None) -> Dict[str, int or dict]:
+    if (not subunit_id) and (post_type in (PostType.subunit_announcement, PostType.subunit_news)):
+        abort(422, "You must specify subunit for this post type")
     pages_count = feed_pages_count(post_type, subunit_id)
     if page <= pages_count:
-        posts = prepare_posts_list(post_repository.get_feed(post_type, page, default_page_size, subunit_id))
+        posts = prepare_posts_list(
+            post_repository.get_posts(post_type, page, default_page_size, {PostStatus.posted}, subunit_id)
+        )
     else:
         posts = []
     return {
@@ -193,6 +201,27 @@ def get_archived_posts(page: int) -> Dict[str, str or dict]:
     pages_count = archive_pages_count()
     if page <= pages_count:
         posts = prepare_posts_list(post_repository.get_archived_posts(page, default_page_size))
+    else:
+        posts = []
+    return {
+        "posts": posts,
+        "pages_count": pages_count
+    }
+
+
+def get_moderation_posts(
+        employee_id: str, post_type: PostType, page: int, posts_statuses: Set[PostStatus], subunit_id: str = None
+) -> Dict[str, int or dict]:
+    if (not subunit_id) and (post_type in (PostType.subunit_announcement, PostType.subunit_news)):
+        abort(422, "You must specify subunit for this post type")
+    moderator = employee_repository.get_employee_by_id(employee_id)
+    if not moderator or moderator.user_type == EmployeeType.user.value:
+        abort(403, "You're not allowed to see this data")
+    if subunit_id and not subunit_repository.get_subunit_by_id(subunit_id):
+        abort(404, "Subunit not found")
+    pages_count = moderation_pages_count(post_type, posts_statuses, subunit_id)
+    if page <= pages_count:
+        posts = prepare_posts_list(post_repository.get_posts(post_type, page, default_page_size, posts_statuses, subunit_id))
     else:
         posts = []
     return {
