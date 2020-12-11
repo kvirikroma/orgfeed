@@ -28,10 +28,6 @@ def base_archive_request() -> BaseQuery:
     return db.session.query(Post).filter(Post.status == PostStatus.archived.value)
 
 
-def base_feed_request(posts_type: PostType) -> BaseQuery:
-    return base_posts_request(posts_type, None, {PostStatus.posted})
-
-
 def base_posts_request_for_subunit(base_request: BaseQuery, subunit_id: str) -> BaseQuery:
     return base_request.\
         filter(Employee.subunit == subunit_id).\
@@ -75,9 +71,14 @@ def base_posts_request(posts_type: PostType, subunit_id: str or None, post_statu
 
 
 def get_posts(
-        posts_type: PostType, page: int, page_size: int, post_statuses: Set[PostStatus], subunit_id: str = None
+        posts_type: PostType, page: int, page_size: int, post_statuses: Set[PostStatus],
+        subunit_id: str = None, oldest_first: bool = False
 ) -> List[Post]:
     base_request = base_posts_request(posts_type, subunit_id, post_statuses)
+    if oldest_first:
+        base_request = base_request.order_by(Post.created_on.asc())
+    else:
+        base_request = base_request.order_by(Post.created_on.desc())
     return base_request.limit(page_size).offset(page * page_size).all()
 
 

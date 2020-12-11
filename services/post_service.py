@@ -221,7 +221,9 @@ def get_moderation_posts(
         abort(404, "Subunit not found")
     pages_count = moderation_pages_count(post_type, posts_statuses, subunit_id)
     if page <= pages_count:
-        posts = prepare_posts_list(post_repository.get_posts(post_type, page, default_page_size, posts_statuses, subunit_id))
+        posts = prepare_posts_list(post_repository.get_posts(
+            post_type, page, default_page_size, posts_statuses, subunit_id, oldest_first=True
+        ))
     else:
         posts = []
     return {
