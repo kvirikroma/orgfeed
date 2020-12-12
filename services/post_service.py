@@ -5,16 +5,18 @@ from math import ceil, floor
 
 from flask import abort
 
-from repositories import post_repository, attachment_repository, employee_repository, subunit_repository, Post
+from repositories import post_repository, attachment_repository, employee_repository, subunit_repository, Post, db
 from models.post_model import PostStatus, PostType
 from models.employee_model import EmployeeType
 from . import attachment_service, any_non_nones, default_page_size
 from .employee_service import prepare_employee
 
 
-def prepare_post(post: Post) -> dict:
+def prepare_post(post: Post, refresh: bool = True) -> dict:
     if not post:
         return {}
+    if refresh:
+        db.session.refresh(post)
     result = post.get_dict()
     result['post_type'] = PostType(post.type).name
     result['status'] = PostStatus(post.status).name
@@ -26,7 +28,7 @@ def prepare_post(post: Post) -> dict:
 
 
 def prepare_posts_list(posts: List[Post]) -> List[dict]:
-    return [prepare_post(post) for post in posts]
+    return [prepare_post(post, refresh=False) for post in posts]
 
 
 def calculate_post_size(post: Post) -> int:
@@ -52,7 +54,7 @@ def get_post(post_id: str) -> dict:
     post = post_repository.get_post_by_id(post_id)
     if not post:
         abort(404, "Post not found")
-    return prepare_post(post)
+    return prepare_post(post, refresh=False)
 
 
 def create_post(creator_id: str, title: str, body: str, post_type: str, attachments: List[str] = None, **kwargs) -> dict:
