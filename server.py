@@ -65,8 +65,7 @@ def after_request(response: Response):
 
     headers = dict(response.headers)
     headers["Cache-Control"] = "no-transform"
-    if response.status_code in (200, 201):
-        headers.update(**cors_headers)
+    headers.update(**cors_headers)
     response.headers = Headers(headers)
 
     path = request.path
