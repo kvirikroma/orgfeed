@@ -92,6 +92,11 @@ def edit_post(
         editor = employee_repository.get_employee_by_id(editor_id)
         if not editor or editor.user_type != EmployeeType.admin.value:
             abort(403, "Non-admins can not edit posts of other users")
+    if post_type:
+        try:
+            post_type = PostType[post_type].value
+        except KeyError:
+            abort(400, "Incorrect post type")
     for existing, new in (('title', title), ('body', body), ('type', post_type)):
         setattr(post, existing, new or getattr(post, existing))
     post_repository.add_or_edit_post(post)
