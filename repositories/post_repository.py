@@ -60,19 +60,21 @@ def get_posts_of_employee(employee_id: str) -> List[Post]:
         all()
 
 
-def base_posts_request(posts_type: PostType, subunit_id: str or None, post_statuses: Set[PostStatus]) -> BaseQuery:
+def base_posts_request(posts_type: PostType = None, subunit_id: str = None, post_statuses: Set[PostStatus] = None) -> BaseQuery:
     post_statuses_int = [status.value for status in post_statuses]
-    base_request = db.session.query(Post).\
-        filter(Post.status.in_(post_statuses_int)).\
-        filter(Post.type == posts_type.value)
+    base_request = db.session.query(Post)
+    if post_statuses:
+        base_request = base_request.filter(Post.status.in_(post_statuses_int))
+    if posts_type:
+        base_request = base_request.filter(Post.type == posts_type.value)
     if subunit_id:
         return base_posts_request_for_subunit(base_request, subunit_id)
     return base_request
 
 
 def get_posts(
-        posts_type: PostType, page: int, page_size: int, post_statuses: Set[PostStatus],
-        subunit_id: str = None, oldest_first: bool = False
+        page: int, page_size: int, posts_type: PostType = None,
+        post_statuses: Set[PostStatus] = None, subunit_id: str = None, oldest_first: bool = False
 ) -> List[Post]:
     base_request = base_posts_request(posts_type, subunit_id, post_statuses)
     if oldest_first:
@@ -82,7 +84,7 @@ def get_posts(
     return base_request.limit(page_size).offset(page * page_size).all()
 
 
-def get_posts_count(posts_type: PostType, post_statuses: Set[PostStatus], subunit_id: str = None) -> int:
+def get_posts_count(posts_type: PostType = None, post_statuses: Set[PostStatus] = None, subunit_id: str = None) -> int:
     base_request = base_posts_request(posts_type, subunit_id, post_statuses)
     return base_request.count()
 

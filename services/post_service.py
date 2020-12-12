@@ -44,7 +44,7 @@ def feed_pages_count(posts_type: PostType, subunit_id: str = None):
     return ceil(post_repository.get_posts_count(posts_type, {PostStatus.posted}, subunit_id) / default_page_size)
 
 
-def moderation_pages_count(posts_type: PostType, posts_statuses: Set[PostStatus], subunit_id: str = None):
+def moderation_pages_count(posts_type: PostType = None, posts_statuses: Set[PostStatus] = None, subunit_id: str = None):
     return ceil(post_repository.get_posts_count(posts_type, posts_statuses, subunit_id) / default_page_size)
 
 
@@ -187,7 +187,7 @@ def get_feed(post_type: PostType, page: int, subunit_id: str = None) -> Dict[str
     pages_count = feed_pages_count(post_type, subunit_id)
     if page <= pages_count:
         posts = prepare_posts_list(
-            post_repository.get_posts(post_type, page, default_page_size, {PostStatus.posted}, subunit_id)
+            post_repository.get_posts(page, default_page_size, post_type, {PostStatus.posted}, subunit_id)
         )
     else:
         posts = []
@@ -209,20 +209,14 @@ def get_archived_posts(page: int) -> Dict[str, str or dict]:
     }
 
 
-def get_moderation_posts(
-        employee_id: str, post_type: PostType, page: int, posts_statuses: Set[PostStatus], subunit_id: str = None
-) -> Dict[str, int or dict]:
-    if (not subunit_id) and (post_type in (PostType.subunit_announcement, PostType.subunit_news)):
-        abort(422, "You must specify subunit for this post type")
+def get_moderation_posts(employee_id: str, page: int, posts_statuses: Set[PostStatus]) -> Dict[str, int or dict]:
     moderator = employee_repository.get_employee_by_id(employee_id)
     if not moderator or moderator.user_type == EmployeeType.user.value:
         abort(403, "You're not allowed to see this data")
-    if subunit_id and not subunit_repository.get_subunit_by_id(subunit_id):
-        abort(404, "Subunit not found")
-    pages_count = moderation_pages_count(post_type, posts_statuses, subunit_id)
+    pages_count = moderation_pages_count(posts_statuses=posts_statuses)
     if page <= pages_count:
         posts = prepare_posts_list(post_repository.get_posts(
-            post_type, page, default_page_size, posts_statuses, subunit_id, oldest_first=True
+            page, default_page_size, post_statuses=posts_statuses, oldest_first=True
         ))
     else:
         posts = []

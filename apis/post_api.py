@@ -217,8 +217,6 @@ class PostStat(OptionsResource):
 class PostModeration(OptionsResource):
     @api.doc("get_posts_moderation", security='apikey', params={
         'page': {"description": 'page number', "required": True},
-        'id': {"description": 'SubUnit ID (if null - will return posts for the whole organization)', "required": False},
-        'type': {"description": 'Type of posts', "required": True, "enum": ['news', 'announcements']},
         'statuses': {
             "description":
                 f"Post statuses to return, separated with commas (allowed values: {[status.name for status in PostStatus]})",
@@ -231,27 +229,12 @@ class PostModeration(OptionsResource):
     @jwt_required
     def get(self):
         """Get posts of given types and statuses by given subunit or whole organization (only for admins and moderators)"""
-        post_type_text = request.args.get("type")
-        subunit_id = request.args.get("id")
-        if subunit_id is not None:
-            get_uuid(subunit_id)
-        if post_type_text == 'news':
-            if subunit_id:
-                post_type = PostType.subunit_news
-            else:
-                post_type = PostType.organization_news
-        elif post_type_text == 'announcements':
-            if subunit_id:
-                post_type = PostType.subunit_announcement
-            else:
-                post_type = PostType.organization_announcement
-        else:
-            return abort(400, "Incorrect type parameter")
         statuses_raw = set(request.args.get("statuses").replace(' ', '').strip(',').split(','))
         statuses = set()
         for status in statuses_raw:
-            try:
-                statuses.add(PostStatus[status])
-            except KeyError:
-                abort(422, f"Incorrect status value '{status}'")
-        return post_service.get_moderation_posts(get_jwt_identity(), post_type, get_page(request), statuses, subunit_id), 200
+            if status:
+                try:
+                    statuses.add(PostStatus[status])
+                except KeyError:
+                    abort(422, f"Incorrect status value '{status}'")
+        return post_service.get_moderation_posts(get_jwt_identity(), get_page(request), statuses), 200

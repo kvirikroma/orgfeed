@@ -47,8 +47,8 @@ api.add_namespace(feed_api)
 api.add_namespace(attachment_api)
 
 cors_headers = {
-    'Access-Control-Allow-Origin': "*",
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "*",
     "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST, PUT"
+    "Access-Control-Allow-Methods": "*"
 }
