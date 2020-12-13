@@ -176,15 +176,13 @@ def get_statistics(start_year: int, start_month: int, end_year: int, end_month: 
     all_posts = post_repository.get_posts_by_period(start_date, end_date)
     all_subunits = subunit_repository.get_all_subunits()
     posts_by_months = {
-        month: {
-            subunit.name: {
-                employee.full_name: 0 for employee in subunit.employees
-            } for subunit in all_subunits
-        } for month in months
+        subunit.name: {
+            month: 0 for month in months
+        } for subunit in all_subunits
     }
     for post in all_posts:
         month = calculate_iso_month(post.published_on.date())
-        posts_by_months[month][post.creator.subunit_ref.name][post.creator.full_name] += 1
+        posts_by_months[post.creator.subunit_ref.name][month] += 1
     return posts_by_months
 
 

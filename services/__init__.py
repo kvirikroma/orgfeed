@@ -8,7 +8,7 @@ default_page_size = 16
 
 
 def get_page(request) -> int:
-    page = request.args.get("page")
+    page = request.args.get("page", '')
     if not page or not page.isdigit():
         abort(400, "Page query parameter must exist and be integer")
     page = int(page) - 1
@@ -23,7 +23,7 @@ def get_uuid(request) -> str:
     if isinstance(request, str):
         value = request
     else:
-        value = request.args.get('id')
+        value = request.args.get('id', '')
     try:
         UUID(value)
     except ValueError:

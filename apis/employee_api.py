@@ -124,7 +124,7 @@ class AuthRefresh(OptionsResource):
     @jwt_required
     def get(self):
         """Get fired users of the subunit"""
-        types_raw = request.args.get('types').replace(' ', '').strip(',').split(',')
+        types_raw = request.args.get('types', '').replace(' ', '').strip(',').split(',')
         types = set()
         for employee_type in types_raw:
             try:
@@ -143,7 +143,7 @@ class AuthRefresh(OptionsResource):
     @jwt_required
     def get(self):
         """Get multiple employees at a time"""
-        ids = request.args.get('ids').replace(' ', '').strip(',').split(',')
+        ids = request.args.get('ids', '').replace(' ', '').strip(',').split(',')
         for employee_id in ids:
             get_uuid(employee_id)
         return employee_service.get_multiple_employees(ids), 200

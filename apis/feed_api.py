@@ -71,7 +71,7 @@ class BiggestPost(OptionsResource):
     def get(self):
         """Get biggest post by date"""
         try:
-            day = date.fromisoformat(request.args.get("day"))
+            day = date.fromisoformat(request.args.get("day", ''))
         except ValueError:
             return abort(422, "Incorrect date format")
         if request.args.get("include_archived", '').lower() == 'true':

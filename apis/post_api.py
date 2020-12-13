@@ -6,7 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
 from models import pages_count_model, required_query_params
-from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostType, PostEditModel
+from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostEditModel
 
 
 api = Namespace("post", "Endpoints for news posts")
@@ -40,8 +40,8 @@ counted_posts_list = api.model(
 posts_statistics = api.model(
     'posts_statistics_model',
     {
-        "2020-11": fields.Raw(example={'IT department': {'Gordon Freeman': 10}}),
-        "2020-12": fields.Raw(example={'Marketing department': {'Alyx Vance': 0}})
+        "IT department": fields.Raw(example={'2020-11': 10}),
+        "Marketing department": fields.Raw(example={'2020-12': 0})
     }
 )
 
@@ -166,7 +166,7 @@ class ArchivePost(OptionsResource):
     def delete(self):
         """Unarchive a post (only for moderators and admins)"""
         try:
-            new_status = PostStatus[request.args.get('status')]
+            new_status = PostStatus[request.args.get('status', '')]
             if new_status == PostStatus.archived:
                 raise KeyError
         except KeyError:
@@ -198,11 +198,11 @@ class PostStat(OptionsResource):
     @api.response(code=422, description="Invalid date given")
     @jwt_required
     def get(self):
-        """Get statistics of posts for each employee of the each subunit"""
-        start_year = request.args.get("start_year")
-        start_month = request.args.get("start_month")
-        end_year = request.args.get("end_year")
-        end_month = request.args.get("end_month")
+        """Get statistics of posts of the each subunit"""
+        start_year = request.args.get("start_year", '')
+        start_month = request.args.get("start_month", '')
+        end_year = request.args.get("end_year", '')
+        end_month = request.args.get("end_month", '')
         if not all(param.isdigit() for param in (start_year, start_month, end_year, end_month)):
             abort(400, "Date values must be integers")
         return post_service.get_statistics(*(int(param) for param in (
