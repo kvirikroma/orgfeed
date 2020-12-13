@@ -41,7 +41,10 @@ def prepare_employee(employee: Employee, renew: bool = False) -> dict:
     if renew:
         employee = employee_repository.get_employee_by_email(employee.email)
     result = employee.get_dict()
-    result["user_type"] = EmployeeType(result["user_type"]).name
+    try:
+        result["user_type"] = EmployeeType(employee.user_type).name
+    except ValueError:
+        pass
     if result.get("password_hash"):
         del result["password_hash"]
     return result
@@ -110,7 +113,7 @@ def edit_employee(
         employee.user_type = EmployeeType[user_type].value
     if fired is not None:
         employee.fired = fired
-    return prepare_employee(employee_repository.add_or_edit_employee(employee))
+    return prepare_employee(employee_repository.add_or_edit_employee(employee), renew=True)
 
 
 def get_fired_moderators(subunit_id: str) -> List[dict]:
