@@ -40,8 +40,8 @@ counted_posts_list = api.model(
 posts_statistics = api.model(
     'posts_statistics_model',
     {
-        "IT department": fields.Raw(example={'2020-11': 10}),
-        "Marketing department": fields.Raw(example={'2020-12': 0})
+        "2020-11": fields.Raw(example={'IT department': 10}),
+        "2020-12": fields.Raw(example={'Marketing department': 0})
     }
 )
 

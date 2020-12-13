@@ -180,9 +180,14 @@ def get_statistics(start_year: int, start_month: int, end_year: int, end_month: 
             month: 0 for month in months
         } for subunit in all_subunits
     }
+    posts_by_months = {
+        month: {
+            subunit.name: 0 for subunit in all_subunits
+        } for month in months
+    }
     for post in all_posts:
         month = calculate_iso_month(post.published_on.date())
-        posts_by_months[post.creator.subunit_ref.name][month] += 1
+        posts_by_months[month][post.creator.subunit_ref.name] += 1
     return posts_by_months
 
 
