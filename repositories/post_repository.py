@@ -34,6 +34,12 @@ def base_posts_request_for_subunit(base_request: BaseQuery, subunit_id: str) -> 
         filter(Post.author == Employee.id)
 
 
+def base_posts_request_for_subunits(base_request: BaseQuery, subunit_ids: List[str]) -> BaseQuery:
+    return base_request.\
+        filter(Employee.subunit.in_(subunit_ids)).\
+        filter(Post.author == Employee.id)
+
+
 def get_archived_posts(page: int, page_size: int) -> List[Post]:
     return base_archive_request().\
         limit(page_size).offset(page * page_size).\
@@ -89,12 +95,14 @@ def get_posts_count(posts_type: PostType = None, post_statuses: Set[PostStatus] 
     return base_request.count()
 
 
-def get_posts_by_period(start: date, end: date) -> List:
-    return db.session.query(Post).\
+def get_posts_by_period(start: date, end: date, subunit_ids: List[str] = None) -> List:
+    base_request = db.session.query(Post).\
         filter(Post.status.in_((PostStatus.posted.value, PostStatus.archived.value))).\
         filter(Post.published_on >= start).\
-        filter(Post.published_on < end).\
-        all()
+        filter(Post.published_on < end)
+    if subunit_ids:
+        base_request = base_posts_request_for_subunits(base_request, subunit_ids)
+    return base_request.all()
 
 
 def archive_expired_posts() -> None:

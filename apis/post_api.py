@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
-from models import pages_count_model, required_query_params
+from models import pages_count_model, required_query_params, update_dict
 from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostEditModel
 
 
@@ -40,8 +40,8 @@ counted_posts_list = api.model(
 posts_statistics = api.model(
     'posts_statistics_model',
     {
-        "2020-11": fields.Raw(example={'IT department': 10}),
-        "2020-12": fields.Raw(example={'Marketing department': 0})
+        "IT department": fields.Raw(example={'2020-11': 10}),
+        "Marketing department": fields.Raw(example={'2020-12': 0})
     }
 )
 
@@ -187,12 +187,12 @@ class Post(OptionsResource):
 
 @api.route('/statistics')
 class PostStat(OptionsResource):
-    @api.doc("get_posts_statistics", security='apikey', params=required_query_params({
+    @api.doc("get_posts_statistics", security='apikey', params=update_dict(required_query_params({
         "start_year": "Year to start from",
         "start_month": "Month to start from",
         "end_year": "Year to finish with",
         "end_month": "Month to finish with"
-    }))
+    }), {"ids": "SubUnit IDs, separated by commas"}))
     @api.response(code=200, description="Success", model=posts_statistics)
     @api.response(code=400, description="Incorrect (non-integer) date parameters")
     @api.response(code=422, description="Invalid date given")
@@ -203,14 +203,15 @@ class PostStat(OptionsResource):
         start_month = request.args.get("start_month", '')
         end_year = request.args.get("end_year", '')
         end_month = request.args.get("end_month", '')
+        ids_raw = set(request.args.get("ids", '').replace(' ', '').strip(',').split(','))
         if not all(param.isdigit() for param in (start_year, start_month, end_year, end_month)):
             abort(400, "Date values must be integers")
         return post_service.get_statistics(*(int(param) for param in (
             start_year,
             start_month,
             end_year,
-            end_month
-        ))), 200
+            end_month,
+        )), subunit_ids=[get_uuid(e_id) for e_id in ids_raw] if ids_raw and all(ids_raw) else None), 200
 
 
 @api.route('/moderation')
@@ -230,7 +231,7 @@ class PostModeration(OptionsResource):
     @jwt_required
     def get(self):
         """Get posts of given types and statuses by given subunit or whole organization (only for admins and moderators)"""
-        statuses_raw = set(request.args.get("statuses").replace(' ', '').strip(',').split(','))
+        statuses_raw = set(request.args.get("statuses", '').replace(' ', '').strip(',').split(','))
         statuses = set()
         for status in statuses_raw:
             if status:

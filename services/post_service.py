@@ -151,7 +151,9 @@ def get_biggest_post(day: date, include_archived: bool) -> dict:
     return max(posts_of_day, key=lambda post: post["size"])
 
 
-def get_statistics(start_year: int, start_month: int, end_year: int, end_month: int) -> Dict[str, Dict[str, Dict[str, int]]]:
+def get_statistics(
+        start_year: int, start_month: int, end_year: int, end_month: int, subunit_ids: List[str] = None
+) -> Dict[str, Dict[str, Dict[str, int]]]:
     def calculate_iso_month(day: date) -> str:
         return str.join('-', day.isoformat().split('-')[:-1])
 
@@ -173,21 +175,16 @@ def get_statistics(start_year: int, start_month: int, end_year: int, end_month: 
         current_year = (start_year + floor((start_month - 1 + month) / 12))
         months_full.append(date(current_year, current_month, 1))
     months = [calculate_iso_month(month) for month in months_full]
-    all_posts = post_repository.get_posts_by_period(start_date, end_date)
+    all_posts = post_repository.get_posts_by_period(start_date, end_date, subunit_ids)
     all_subunits = subunit_repository.get_all_subunits()
     posts_by_months = {
         subunit.name: {
             month: 0 for month in months
-        } for subunit in all_subunits
-    }
-    posts_by_months = {
-        month: {
-            subunit.name: 0 for subunit in all_subunits
-        } for month in months
+        } for subunit in all_subunits if (subunit_ids and subunit.id in subunit_ids) or (not subunit_ids)
     }
     for post in all_posts:
         month = calculate_iso_month(post.published_on.date())
-        posts_by_months[month][post.creator.subunit_ref.name] += 1
+        posts_by_months[post.creator.subunit_ref.name][month] += 1
     return posts_by_months
 
 

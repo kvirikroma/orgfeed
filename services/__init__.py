@@ -19,11 +19,13 @@ def get_page(request) -> int:
     return page
 
 
-def get_uuid(request) -> str:
+def get_uuid(request, allow_empty: bool = False) -> str:
     if isinstance(request, str):
         value = request
     else:
         value = request.args.get('id', '')
+    if not value and allow_empty:
+        return value
     try:
         UUID(value)
     except ValueError:
