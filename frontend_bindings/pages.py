@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, redirect
 
 
 def bind_frontend_pages(app: Flask):
@@ -11,7 +11,7 @@ def bind_frontend_pages(app: Flask):
 
     @app.route("/", methods=["GET"])
     def index():
-        return render_template("index.html")
+        return redirect("/api/v1/")
 
     @app.route("/<string:page_name>.html", methods=["GET"])
     def page(page_name: str):

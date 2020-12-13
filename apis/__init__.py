@@ -32,7 +32,7 @@ class CustomApi(Api):
 api = CustomApi(
     api_bp,
     title='OrgFeed API',
-    version='0.0.1-dev',
+    version='0.0.2-dev',
     doc='/',
     description='API for news feed of some organization',
     authorizations=authorization
