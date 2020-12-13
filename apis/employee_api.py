@@ -1,5 +1,5 @@
 from flask_restx.namespace import Namespace
-from flask import request
+from flask import request, abort
 from flask_jwt_extended import (jwt_required, get_jwt_identity, jwt_refresh_token_required,
                                 create_access_token, create_refresh_token)
 
@@ -7,7 +7,7 @@ from services import employee_service, get_uuid
 from .utils import OptionsResource
 from models import required_query_params
 from models.employee_model import (AuthModel, FullEmployeeModel, EmployeeRegistrationModel,
-                                   TokenModel, EmployeeEditModel, EmployeeIdModel)
+                                   TokenModel, EmployeeEditModel, EmployeeIdModel, EmployeeType)
 
 
 api = Namespace('employee', description='Employees-related actions')
@@ -114,15 +114,24 @@ class AuthRefresh(OptionsResource):
         }, 200
 
 
-@api.route('/fired_moderators')
+@api.route('/fired')
 class AuthRefresh(OptionsResource):
-    @api.doc('fired_moderators_of_subunit', security='apikey', params=required_query_params({'id': 'SubUnit ID'}))
+    @api.doc('fired_employees_of_subunit', security='apikey', params=required_query_params(
+        {'id': 'SubUnit ID', "types": "Types of employees, separated by commas"}
+    ))
     @api.marshal_with(full_employee, code=200, as_list=True)
     @api.response(404, description="SubUnit not found")
     @jwt_required
     def get(self):
-        """Get fired admins and moderators of the subunit"""
-        return employee_service.get_fired_moderators(get_uuid(request)), 200
+        """Get fired users of the subunit"""
+        types_raw = request.args.get('types').replace(' ', '').strip(',').split(',')
+        types = set()
+        for employee_type in types_raw:
+            try:
+                types.add(EmployeeType(employee_type))
+            except ValueError:
+                abort(400, f"Incorrect employee type '{employee_type}'")
+        return employee_service.get_fired_moderators(get_uuid(request), types), 200
 
 
 @api.route('/multiple')

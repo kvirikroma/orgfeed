@@ -27,9 +27,9 @@ def delete_employee(employee: Employee) -> None:
     db.session.commit()
 
 
-def fired_moderators_of_subunit(subunit_id: str) -> List[Employee]:
+def fired_users_of_subunit(subunit_id: str, types: Iterable[EmployeeType]) -> List[Employee]:
     return db.session.query(Employee).\
         filter(Employee.subunit == subunit_id).\
-        filter(Employee.user_type.in_((EmployeeType.admin.value, EmployeeType.moderator.value))).\
+        filter(Employee.user_type.in_(e_type.value for e_type in types)).\
         filter(Employee.fired).\
         all()

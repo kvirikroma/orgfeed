@@ -116,10 +116,10 @@ def edit_employee(
     return prepare_employee(employee_repository.add_or_edit_employee(employee), renew=True)
 
 
-def get_fired_moderators(subunit_id: str) -> List[dict]:
+def get_fired_moderators(subunit_id: str, types: Iterable[EmployeeType]) -> List[dict]:
     if not subunit_repository.get_subunit_by_id(subunit_id):
         abort(404, "Subunit not found")
-    return [prepare_employee(employee) for employee in employee_repository.fired_moderators_of_subunit(subunit_id)]
+    return [prepare_employee(employee) for employee in employee_repository.fired_users_of_subunit(subunit_id, types)]
 
 
 def get_multiple_employees(employee_ids: Iterable[str]) -> List[dict]:
