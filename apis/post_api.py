@@ -221,7 +221,8 @@ class PostModeration(OptionsResource):
             "description":
                 f"Post statuses to return, separated with commas (allowed values: {[status.name for status in PostStatus]})",
             "required": True
-        }
+        },
+        "reverse": {'description': "Reverse output (by date) or not. True by default.", "enum": ['true', 'false']}
     })
     @api.marshal_with(counted_posts_list, code=200)
     @api.response(code=403, description="Have no privileges to moderate posts")
@@ -237,4 +238,9 @@ class PostModeration(OptionsResource):
                     statuses.add(PostStatus[status])
                 except KeyError:
                     abort(422, f"Incorrect status value '{status}'")
-        return post_service.get_moderation_posts(get_jwt_identity(), get_page(request), statuses), 200
+        return post_service.get_all_posts(
+            get_jwt_identity(),
+            get_page(request),
+            statuses,
+            reverse=(request.args.get('reverse', 'true') == 'true')
+        ), 200

@@ -216,14 +216,14 @@ def get_archived_posts(page: int) -> Dict[str, str or dict]:
     }
 
 
-def get_moderation_posts(employee_id: str, page: int, posts_statuses: Set[PostStatus]) -> Dict[str, int or dict]:
+def get_all_posts(employee_id: str, page: int, posts_statuses: Set[PostStatus], reverse: bool = True) -> Dict[str, int or dict]:
     moderator = employee_repository.get_employee_by_id(employee_id)
     if not moderator or moderator.user_type == EmployeeType.user.value:
         abort(403, "You're not allowed to see this data")
     pages_count = moderation_pages_count(posts_statuses=posts_statuses)
     if page <= pages_count:
         posts = prepare_posts_list(post_repository.get_posts(
-            page, default_page_size, post_statuses=posts_statuses, oldest_first=True
+            page, default_page_size, post_statuses=posts_statuses, oldest_first=reverse
         ))
     else:
         posts = []
