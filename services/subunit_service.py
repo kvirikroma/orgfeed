@@ -67,4 +67,4 @@ def get_subunit(subunit_id: str) -> dict:
 
 
 def get_all_subunits() -> List[dict]:
-    return [prepare_subunit(subunit) for subunit in subunit_repository.get_all_subunits()]
+    return [prepare_subunit(subunit) for subunit in subunit_repository.get_subunits()]

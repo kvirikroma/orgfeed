@@ -176,11 +176,11 @@ def get_statistics(
         months_full.append(date(current_year, current_month, 1))
     months = [calculate_iso_month(month) for month in months_full]
     all_posts = post_repository.get_posts_by_period(start_date, end_date, subunit_ids)
-    all_subunits = subunit_repository.get_all_subunits()
+    all_subunits = subunit_repository.get_subunits(subunit_ids)
     posts_by_months = {
         subunit.name: {
             month: 0 for month in months
-        } for subunit in all_subunits if (subunit_ids and subunit.id in subunit_ids) or (not subunit_ids)
+        } for subunit in all_subunits
     }
     for post in all_posts:
         month = calculate_iso_month(post.published_on.date())

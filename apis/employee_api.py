@@ -5,7 +5,7 @@ from flask_jwt_extended import (jwt_required, get_jwt_identity, jwt_refresh_toke
 
 from services import employee_service, get_uuid
 from .utils import OptionsResource
-from models import required_query_params
+from models import required_query_params, query_param_to_set
 from models.employee_model import (AuthModel, FullEmployeeModel, EmployeeRegistrationModel,
                                    TokenModel, EmployeeEditModel, EmployeeIdModel, EmployeeType)
 
@@ -124,7 +124,7 @@ class AuthRefresh(OptionsResource):
     @jwt_required
     def get(self):
         """Get fired users of the subunit"""
-        types_raw = request.args.get('types', '').replace(' ', '').strip(',').split(',')
+        types_raw = query_param_to_set("types")
         types = set()
         for employee_type in types_raw:
             try:
@@ -143,7 +143,7 @@ class AuthRefresh(OptionsResource):
     @jwt_required
     def get(self):
         """Get multiple employees at a time"""
-        ids = request.args.get('ids', '').replace(' ', '').strip(',').split(',')
+        ids = query_param_to_set("ids")
         for employee_id in ids:
             get_uuid(employee_id)
         return employee_service.get_multiple_employees(ids), 200

@@ -26,5 +26,8 @@ def delete_subunit(subunit: Subunit) -> None:
     db.session.commit()
 
 
-def get_all_subunits() -> List[Subunit]:
-    return db.session.query(Subunit).all()
+def get_subunits(subunit_ids: List[str] = None) -> List[Subunit]:
+    base_request = db.session.query(Subunit)
+    if subunit_ids:
+        base_request = base_request.filter(Subunit.id.in_(subunit_ids))
+    return base_request.all()

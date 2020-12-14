@@ -1,6 +1,7 @@
-from typing import Dict, Type
+from typing import Dict, Generator, Set
 
 from flask_restx import fields
+from flask import request
 
 
 ID_EXAMPLE = 'd1d3ee42-731c-04d9-0eee-16d3e7a62948'
@@ -83,3 +84,14 @@ def update_dict(dict1: dict or ModelCreator, dict2: dict or ModelCreator) -> dic
     result = dict1.copy()
     result.update(dict2)
     return result
+
+
+def iterate_query_param(param_value: str) -> Generator[str, None, None]:
+    result_raw = param_value.replace(' ', '').strip(',').split(',')
+    for item in result_raw:
+        if item:
+            yield item
+
+
+def query_param_to_set(param_name: str) -> Set[str]:
+    return set(iterate_query_param(request.args.get(param_name, '')))

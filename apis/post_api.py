@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from services import post_service, get_uuid, get_page
 from .utils import OptionsResource
-from models import pages_count_model, required_query_params, update_dict
+from models import pages_count_model, required_query_params, update_dict, query_param_to_set
 from models.post_model import PostCreateModel, PostFullModel, PostStatus, PostEditModel
 
 
@@ -203,7 +203,7 @@ class PostStat(OptionsResource):
         start_month = request.args.get("start_month", '')
         end_year = request.args.get("end_year", '')
         end_month = request.args.get("end_month", '')
-        ids_raw = set(request.args.get("ids", '').replace(' ', '').strip(',').split(','))
+        ids_raw = query_param_to_set("ids")
         if not all(param.isdigit() for param in (start_year, start_month, end_year, end_month)):
             abort(400, "Date values must be integers")
         return post_service.get_statistics(*(int(param) for param in (
@@ -231,7 +231,7 @@ class PostModeration(OptionsResource):
     @jwt_required
     def get(self):
         """Get posts of given types and statuses by given subunit or whole organization (only for admins and moderators)"""
-        statuses_raw = set(request.args.get("statuses", '').replace(' ', '').strip(',').split(','))
+        statuses_raw = query_param_to_set("statuses")
         statuses = set()
         for status in statuses_raw:
             if status:
